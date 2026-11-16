@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quick Hisab by FaBi Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#F6EFDF;--card:#FCF8EE;--ink:#2B2420;--soft:#6B6055;--maroon:#7A1F2B;--line:#DED0AC;--green:#2F6E4F;--green-bg:#E4EFE3;--red:#B23A32;--red-bg:#F5E4DF;--gold-bg:#F5EBC8}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%}
+body{font-family:'Hind Siliguri',sans-serif;background:var(--paper);color:var(--ink)}
+#app{max-width:480px;margin:0 auto;min-height:100dvh;padding:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:12px}
+h1{font-size:22px;margin:0 0 4px;color:var(--maroon)}
+.sub{color:var(--soft);font-size:13px;margin-bottom:10px}
+.brand{font-size:11px;color:var(--soft);letter-spacing:.3px;margin:0 0 10px}
+label{display:block;font-size:13px;color:var(--soft);margin:10px 0 4px}
+input{width:100%;font:inherit;font-size:16px;padding:12px;border:1px solid var(--line);border-radius:10px;background:#fff}
+input:focus{outline:2px solid var(--maroon);border-color:var(--maroon)}
+.btn{width:100%;min-height:48px;margin-top:14px;font:inherit;font-weight:600;font-size:16px;border:0;border-radius:12px;background:var(--maroon);color:#fff}
+.btn:active{opacity:.85}.btn:disabled{opacity:.5}
+.btn.ghost{background:transparent;color:var(--maroon);border:1px solid var(--maroon)}
+.link{background:none;border:0;color:var(--maroon);font:inherit;text-decoration:underline;padding:10px 0;width:100%}
+.msg{margin-top:10px;font-size:13px;color:var(--red);min-height:18px}
+.msg.ok{color:var(--green)}
+.badge{display:inline-block;padding:2px 10px;border-radius:99px;font-size:12px;font-weight:600}
+.b-ok{background:var(--green-bg);color:var(--green)}.b-warn{background:var(--gold-bg);color:#8a6a00}.b-bad{background:var(--red-bg);color:var(--red)}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 0;border-bottom:1px dashed var(--line)}
+.row:last-child{border:0}
+.center{text-align:center;padding-top:40vh;color:var(--soft)}
+</style>
+</head>
+<body>
+<div id="app"><div class="center">লোড হচ্ছে…</div></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, collection, onSnapshot, writeBatch, addDoc, serverTimestamp, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+// ====== এখানে আপনার নতুন প্রজেক্টের তথ্য বসান ======
+const firebaseConfig = {
+  apiKey: "AIzaSyBKGFO5vpJlOWjbVkcEQVb_ipfr6oZnb68",
+  authDomain: "quick-hisab-dcfbb.firebaseapp.com",
+  projectId: "quick-hisab-dcfbb",
+  storageBucket: "quick-hisab-dcfbb.firebasestorage.app",
+  messagingSenderId: "510580019934",
+  appId: "1:510580019934:web:05a052d087552352e0684f"
+};
+const ADMIN_UID = "ez6HcRZeunUy4fVEdFNBtxrzrDe2";   // Firestore Rules-এর UID-র সাথে হুবহু এক
+const TRIAL_DAYS = 30, RENEW_WARN_DAYS = 7, GRACE_DAYS = 3; // GRACE_DAYS Rules-এর ৩-এর সাথে মিলতে হবে
+// ====================================================
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+const root = $("#app");
+const show = h => { root.innerHTML = h; $("#lo")?.addEventListener("click", () => signOut(auth)); };
+const loading = '<div class="center">লোড হচ্ছে…</div>';
+const fmtDate = ts => { const d = ts.toDate(); return d.getDate() + "/" + (d.getMonth() + 1) + "/" + d.getFullYear(); };
+const ERR = {
+  "auth/invalid-credential": "ইমেইল বা পাসওয়ার্ড ভুল।", "auth/invalid-email": "ইমেইল ঠিক নয়।",
+  "auth/email-already-in-use": "এই ইমেইলে আগেই অ্যাকাউন্ট আছে।", "auth/weak-password": "পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের দিন।",
+  "auth/network-request-failed": "ইন্টারনেট নেই।", "auth/too-many-requests": "অনেকবার চেষ্টা হয়েছে, একটু পরে আবার দিন।",
+  "permission-denied": "অনুমতি নেই। ফোনের তারিখ-সময় ঠিক আছে কি দেখুন, অথবা মেয়াদ শেষ।"
+};
+const errMsg = e => ERR[e.code] || "ত্রুটি: " + (e.code || e.message);
+
+let unsubs = [];
+let S = {};
+
+// ---------- লগইন / রেজিস্টার ----------
+function profileFields() {
+  return `<label>দোকানের নাম</label><input id="shop" required>
+  <label>মালিকের নাম</label><input id="own" required>
+  <label>মোবাইল নম্বর</label><input id="ph" inputmode="tel" required>`;
+}
+function readProfile() {
+  return { shopName: $("#shop").value.trim(), ownerName: $("#own").value.trim(), phone: $("#ph").value.trim() };
+}
+async function createProfile(p) {
+  const uid = auth.currentUser.uid, b = writeBatch(db);
+  b.set(doc(db, "clients", uid), { ...p, appType: "grocery", createdAt: serverTimestamp() });
+  b.set(doc(db, "subscriptions", uid), {
+    plan: "trial", mode: "simple", status: "active", startAt: serverTimestamp(),
+    expiresAt: Timestamp.fromMillis(Date.now() + TRIAL_DAYS * 864e5)
+  });
+  await b.commit();
+}
+function viewAuth(mode = "login") {
+  const reg = mode === "reg";
+  show(`<div class="card"><h1>Quick Hisab</h1><div class="brand">by FaBi Hub</div>
+  <form id="f">${reg ? profileFields() : ""}
+  <label>ইমেইল</label><input id="em" type="email" autocomplete="email" required>
+  <label>পাসওয়ার্ড</label><input id="pw" type="password" minlength="6" autocomplete="${reg ? "new-password" : "current-password"}" required>
+  <div class="msg" id="m"></div>
+  <button class="btn" id="go">${reg ? "রেজিস্টার (৩০ দিন ফ্রি)" : "লগইন"}</button></form>
+  ${reg ? "" : '<button class="link" id="fp">পাসওয়ার্ড ভুলে গেছেন?</button>'}
+  <button class="link" id="sw">${reg ? "অ্যাকাউন্ট আছে? লগইন" : "নতুন অ্যাকাউন্ট খুলুন"}</button></div>`);
+  $("#sw").onclick = () => viewAuth(reg ? "login" : "reg");
+  if (!reg) $("#fp").onclick = async () => {
+    const em = $("#em").value.trim(), m = $("#m");
+    if (!em) { m.className = "msg"; m.textContent = "আগে ইমেইল লিখুন।"; return; }
+    try { await sendPasswordResetEmail(auth, em); m.className = "msg ok"; m.textContent = "রিসেট লিংক ইমেইলে পাঠানো হয়েছে।"; }
+    catch (e) { m.className = "msg"; m.textContent = errMsg(e); }
+  };
+  $("#f").onsubmit = async ev => {
+    ev.preventDefault();
+    const go = $("#go"), m = $("#m"), em = $("#em").value.trim(), pw = $("#pw").value;
+    go.disabled = true; m.className = "msg"; m.textContent = "";
+    try {
+      if (reg) {
+        const p = readProfile(); S.registering = true;
+        await createUserWithEmailAndPassword(auth, em, pw);
+        await createProfile(p);
+        S.registering = false;
+      } else await signInWithEmailAndPassword(auth, em, pw);
+    } catch (e) { S.registering = false; m.textContent = errMsg(e); go.disabled = false; }
+  };
+}
+function viewProfile() {
+  show(`<div class="card"><h1>প্রোফাইল সম্পূর্ণ করুন</h1><div class="sub">শুরু করতে দোকানের তথ্য দিন</div>
+  <form id="f">${profileFields()}<div class="msg" id="m"></div><button class="btn" id="go">সেভ করুন</button></form>
+  <button class="link" id="lo">লগআউট</button></div>`);
+  $("#f").onsubmit = async ev => {
+    ev.preventDefault(); const go = $("#go"); go.disabled = true;
+    try { await createProfile(readProfile()); } catch (e) { $("#m").textContent = errMsg(e); go.disabled = false; }
+  };
+}
+
+// ---------- মালিকের স্ক্রিন (এখন শুধু স্ট্যাটাস + টেস্ট) ----------
+function statusBadge(s) {
+  if (!s) return '<span class="badge b-bad">সাবস্ক্রিপশন নেই</span>';
+  if (s.status !== "active") return '<span class="badge b-bad">বন্ধ — যোগাযোগ করুন</span>';
+  const left = s.expiresAt.toMillis() - Date.now(), days = Math.ceil(left / 864e5);
+  if (left <= -GRACE_DAYS * 864e5) return '<span class="badge b-bad">মেয়াদ শেষ — শুধু দেখা যাবে</span>';
+  if (left <= 0) return '<span class="badge b-warn">মেয়াদ শেষ — গ্রেস চলছে, রিনিউ করুন</span>';
+  if (days <= RENEW_WARN_DAYS) return `<span class="badge b-warn">${days} দিন বাকি — রিনিউ করুন</span>`;
+  return `<span class="badge b-ok">চালু · ${days} দিন বাকি</span>`;
+}
+function renderOwner() {
+  const c = S.client, s = S.sub;
+  if (c === undefined || s === undefined) return show(loading);
+  if (c === null) return S.registering ? show(loading) : viewProfile();
+  show(`<div class="card"><h1>${esc(c.shopName)}</h1><div class="brand">Quick Hisab by FaBi Hub</div>
+  <div class="row"><span>মালিক</span><b>${esc(c.ownerName)} · ${esc(c.phone)}</b></div>
+  <div class="row"><span>অবস্থা</span>${statusBadge(s)}</div>
+  ${s ? `<div class="row"><span>প্ল্যান / মোড</span><b>${esc(s.plan)} / ${esc(s.mode)}</b></div>
+  <div class="row"><span>মেয়াদ</span><b>${fmtDate(s.expiresAt)}</b></div>` : ""}
+  ${S.pending ? '<div class="row"><span class="badge b-warn">⏳ সিঙ্ক বাকি (নেট এলে যাবে)</span></div>' : ""}</div>
+  <div class="card"><div class="sub">মডিউল ১ টেস্ট: নিচের বাটনে লেখা ও সুরক্ষা যাচাই হবে</div>
+  <div class="row"><span>টেস্ট এন্ট্রি</span><b>${S.n}</b></div><div class="msg" id="m"></div>
+  <button class="btn" id="t">+ টেস্ট এন্ট্রি</button></div>
+  <button class="btn ghost" id="lo">লগআউট</button>`);
+  $("#t").onclick = async () => {
+    try { await addDoc(collection(db, "clients", S.uid, "test"), { note: "টেস্ট", createdAt: serverTimestamp(), createdBy: S.uid }); }
+    catch (e) { $("#m").textContent = errMsg(e); }
+  };
+}
+function viewOwner(u) {
+  S = { uid: u.uid, client: undefined, sub: undefined, n: 0, pending: false, registering: S.registering };
+  const onErr = e => { show(`<div class="card"><div class="msg">${esc(errMsg(e))}</div><button class="btn ghost" id="lo">লগআউট</button></div>`); };
+  unsubs.push(onSnapshot(doc(db, "clients", u.uid), d => { S.client = d.exists() ? d.data() : null; renderOwner(); }, onErr));
+  unsubs.push(onSnapshot(doc(db, "subscriptions", u.uid), d => { S.sub = d.exists() ? d.data() : null; renderOwner(); }, onErr));
+  unsubs.push(onSnapshot(collection(db, "clients", u.uid, "test"), d => { S.n = d.size; S.pending = d.metadata.hasPendingWrites; renderOwner(); }, onErr));
+}
+
+// ---------- অ্যাডমিন স্ক্রিন (এখন শুধু তালিকা) ----------
+function viewAdmin() {
+  const A = { c: [], s: {} };
+  const draw = () => show(`<div class="card"><h1>অ্যাডমিন</h1><div class="brand">Quick Hisab by FaBi Hub</div><div class="sub">ক্লায়েন্ট: ${A.c.length}</div>
+  ${A.c.map(x => `<div class="row"><div><b>${esc(x.shopName)}</b><div class="sub" style="margin:0">${esc(x.ownerName)} · ${esc(x.phone)}</div></div>
+  <div style="text-align:right">${statusBadge(A.s[x.id])}<div class="sub" style="margin:2px 0 0">${A.s[x.id] ? esc(A.s[x.id].plan) + " / " + esc(A.s[x.id].mode) : ""}</div></div></div>`).join("") || '<div class="sub">এখনো কোনো ক্লায়েন্ট নেই</div>'}</div>
+  <button class="btn ghost" id="lo">লগআউট</button>`);
+  const onErr = e => show(`<div class="card"><div class="msg">${esc(errMsg(e))}</div><button class="btn ghost" id="lo">লগআউট</button></div>`);
+  unsubs.push(onSnapshot(collection(db, "clients"), q => { A.c = q.docs.map(d => ({ id: d.id, ...d.data() })); draw(); }, onErr));
+  unsubs.push(onSnapshot(collection(db, "subscriptions"), q => { A.s = {}; q.docs.forEach(d => A.s[d.id] = d.data()); draw(); }, onErr));
+}
+
+// ---------- রোল দেখে রাউটিং ----------
+onAuthStateChanged(auth, u => {
+  unsubs.forEach(f => f()); unsubs = [];
+  if (!u) { viewAuth(); return; }
+  show(loading);
+  if (u.uid === ADMIN_UID) viewAdmin(); else viewOwner(u);
+});
+</script>
+</body>
+</html>
