@@ -11,13 +11,13 @@
 html,body{margin:0;min-height:100%}
 body{font-family:'Hind Siliguri',sans-serif;background:var(--paper);color:var(--ink)}
 #app{max-width:480px;margin:0 auto;min-height:100dvh;padding:16px 16px 84px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px}
 h1{font-size:22px;margin:0 0 2px;color:var(--maroon)}
 .sub{color:var(--soft);font-size:13px;margin-bottom:10px}
 .brand{font-size:11px;color:var(--soft);letter-spacing:.3px;margin:0 0 10px}
 .tag{font-size:12px;color:var(--soft)}
 label{display:block;font-size:13px;color:var(--soft);margin:10px 0 4px}
-input{width:100%;font:inherit;font-size:16px;padding:12px;border:1px solid var(--line);border-radius:10px;background:#fff}
+input{width:100%;font:inherit;font-size:16px;padding:10px;border:1px solid var(--line);border-radius:10px;background:#fff}
 input:focus{outline:2px solid var(--maroon);border-color:var(--maroon)}
 .btn{width:100%;min-height:48px;margin-top:14px;font:inherit;font-weight:600;font-size:16px;border:0;border-radius:12px;background:var(--maroon);color:#fff}
 .btn:active{opacity:.85}.btn:disabled{opacity:.5}
@@ -28,7 +28,7 @@ input:focus{outline:2px solid var(--maroon);border-color:var(--maroon)}
 .msg.ok{color:var(--green)}
 .badge{display:inline-block;padding:2px 10px;border-radius:99px;font-size:12px;font-weight:600}
 .b-ok{background:var(--green-bg);color:var(--green)}.b-warn{background:var(--gold-bg);color:#8a6a00}.b-bad{background:var(--red-bg);color:var(--red)}
-.row{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 0;border-bottom:1px dashed var(--line)}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px dashed var(--line)}
 .row:last-child{border:0}
 .center{text-align:center;padding-top:40vh;color:var(--soft)}
 .neg{color:var(--red)}.pos{color:var(--green)}.x{text-decoration:line-through;opacity:.55}
@@ -45,6 +45,12 @@ nav button.on{color:var(--maroon);font-weight:700}
 #toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#2B2420;color:#fff;padding:10px 16px;border-radius:10px;font-size:14px;max-width:90%;display:none;z-index:60;text-align:center}
 .ov{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;display:flex;align-items:flex-end;justify-content:center}
 .sh{background:var(--card);width:100%;max-width:480px;border-radius:18px 18px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom));max-height:90dvh;overflow:auto}
+.ib{border:1px solid var(--line);background:#fff;border-radius:8px;padding:4px 10px;font:inherit;font-size:13px;margin-left:4px;color:var(--maroon)}
+.srow{display:flex;align-items:center;gap:8px;background:#F1E9D4;border-radius:10px;padding:6px 10px;margin-bottom:6px;font-size:14px}
+.srow span{color:var(--soft);flex:0 0 auto}.srow b{flex:1;text-align:right;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sh2{font-size:13px;font-weight:700;color:var(--maroon);margin:0 0 8px}
+.dd{display:none;position:absolute;left:0;right:0;z-index:20;background:#fff;border:1px solid var(--line);border-radius:10px;max-height:240px;overflow:auto;box-shadow:0 6px 16px rgba(0,0,0,.12)}
+.dd .pick{margin:0;border:0;border-bottom:1px solid var(--line);border-radius:0}
 </style>
 </head>
 <body>
@@ -53,7 +59,7 @@ nav button.on{color:var(--maroon);font-weight:700}
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signOut, reauthenticateWithCredential, EmailAuthProvider, updatePassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, collection, onSnapshot, writeBatch, getDoc, setDoc, updateDoc, query, where, increment, arrayUnion, serverTimestamp, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -110,7 +116,18 @@ const T = {
   opening:["আগের বাকি — পুরোনো খাতা থেকে (ঐচ্ছিক)","Opening due from old register (optional)"], none_cust:["কোনো কাস্টমার নেই","No customers"],
   receive:["আদায় নিন","Receive payment"], do_sale:["বিক্রি করুন","New sale"], collected:["আদায়","Collection"], adv:["অগ্রিম জমা","Advance"], will_get:["পাবো","To receive"],
   reconcile:["মিলিয়ে দেখো","Verify balance"], rec_ok:["হিসাব মিলেছে ✓","Balance matches ✓"], rec_fixed:["অমিল ছিল, ঠিক করা হয়েছে","Mismatch found and fixed"],
-  rec_saved:["৳ {a} আদায় সেভ হয়েছে","৳ {a} collection saved"], edit:["এডিট","Edit"], back:["ফিরে যান","Back"], no_entries:["কোনো লেনদেন নেই","No transactions"]
+  rec_saved:["৳ {a} আদায় সেভ হয়েছে","৳ {a} collection saved"], edit:["এডিট","Edit"], back:["ফিরে যান","Back"], no_entries:["কোনো লেনদেন নেই","No transactions"],
+  sell:["বিক্রি","Sell"], note:["নোট (ঐচ্ছিক)","Note (optional)"], last10:["শেষ ১০টা বিক্রি","Last 10 sales"], all:["সব","All"], less:["কম দেখান","Show less"],
+  edit_sale:["বিক্রি এডিট","Edit sale"], edited_by:["এডিট করেছেন: ","Edited by "], cancel_by:["বাতিল করেছেন: ","Cancel by "], sale_edited:["বিক্রি এডিট হয়েছে","Sale updated"],
+  old_note:["পুরোনো বাকি আদায় ৳{o} অপরিবর্তিত থাকবে","Old-due collection ৳{o} stays unchanged"],
+  pw_confirm:["পাসওয়ার্ড দিন","Enter password"], pw_why:["নিশ্চিত করতে আপনার অ্যাকাউন্টের পাসওয়ার্ড দিন (নেট লাগবে)","Enter your account password to confirm (internet required)"],
+  confirm:["নিশ্চিত করুন","Confirm"], cancel_btn:["না, থাক","Back"], pw_chg:["পাসওয়ার্ড পরিবর্তন","Change password"],
+  pw_cur:["বর্তমান পাসওয়ার্ড","Current password"], pw_new:["নতুন পাসওয়ার্ড","New password"], pw_new2:["নতুন পাসওয়ার্ড আবার","Confirm new password"],
+  pw_mis:["পাসওয়ার্ড দুটো মিলছে না","Passwords do not match"], pw_done:["পাসওয়ার্ড বদলানো হয়েছে","Password changed"],
+  trial_s:["ফ্রি ট্রায়াল","Free trial"], dayu:["দিন","days"], app_t:["অ্যাপ","App"],
+  cur_exp:["বর্তমান মেয়াদ","Current expiry"], new_exp:["নতুন মেয়াদ","New expiry"], plus30:["+৩০ দিন","+30 days"], plus365:["+৩৬৫ দিন","+365 days"],
+  warn_reduce:["⚠ মেয়াদ কমানো হচ্ছে: {a} → {b} ({d} দিন কম)। ক্লায়েন্ট আগেই লক হয়ে যেতে পারে। চালিয়ে যাবেন?","⚠ Reducing expiry: {a} → {b} ({d} days less). The client may be locked out sooner. Continue?"],
+  bad_date:["সঠিক তারিখ দিন","Enter a valid date"], exp_saved:["মেয়াদ বদলানো হয়েছে","Expiry updated"]
 };
 const en = () => P.lang === "en";
 const t = (k, v) => { let s = (T[k] || [k, k])[en() ? 1 : 0]; if (v) for (const x in v) s = s.replace("{" + x + "}", v[x]); return s; };
@@ -132,7 +149,8 @@ const calcBind = (el, cb) => {
   el.addEventListener("input", () => cb && cb());
   el.addEventListener("change", () => { const v = calc(el.value); if (!isNaN(v) && /[+\-*/()]/.test(norm(el.value))) el.value = r2(v); cb && cb(); });
 };
-const todayStr = () => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
+const dstr = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+const todayStr = () => dstr(new Date());
 const fmtD = s => { const [y, m, d] = s.split("-"); return dg(`${+d}/${+m}/${y}`); };
 const fmtDate = ts => { const d = ts.toDate(); return dg(`${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`); };
 const tm = m => dg(new Date(m).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }));
@@ -157,12 +175,6 @@ const closeSheet = () => document.querySelector(".ov")?.remove();
 const sheet = h => { closeSheet(); const o = document.createElement("div"); o.className = "ov"; o.innerHTML = `<div class="sh">${h}</div>`; o.onclick = e => { if (e.target === o) o.remove(); }; document.body.appendChild(o); return o; };
 const EK = { "auth/invalid-credential":"e_cred","auth/invalid-email":"e_mail","auth/email-already-in-use":"e_used","auth/weak-password":"e_weak","auth/network-request-failed":"e_net","auth/too-many-requests":"e_many","permission-denied":"e_perm" };
 const errMsg = e => EK[e.code] ? t(EK[e.code]) : t("e_gen") + ": " + (e.code || e.message);
-const langCard = () => `<div class="card"><b>${t("lang")}</b><div class="seg"><button data-l="bn" class="${P.lang === "bn" ? "on" : ""}">বাংলা</button><button data-l="en" class="${P.lang === "en" ? "on" : ""}">English</button></div>
-  <label>${t("digits")}</label><div class="seg"><button data-d="bn" class="${P.dig === "bn" ? "on" : ""}">০১২৩</button><button data-d="en" class="${P.dig === "en" ? "on" : ""}">0123</button></div></div>`;
-const bindLang = () => {
-  document.querySelectorAll("[data-l]").forEach(b => b.onclick = () => { P.lang = b.dataset.l; LS.s("lang", P.lang); rerender(); });
-  document.querySelectorAll("[data-d]").forEach(b => b.onclick = () => { P.dig = b.dataset.d; LS.s("dig", P.dig); rerender(); });
-};
 const rerender = () => { if (ROLE === "admin") drawAdmin(); else if (ROLE === "owner" && S.drawn) draw(); };
 function statusBadge(s) {
   if (!s) return `<span class="badge b-bad">${t("b_none")}</span>`;
@@ -232,7 +244,7 @@ const newRef = c => doc(collection(db, "clients", S.uid, c));
 const fail = e => toast(errMsg(e));
 
 function viewOwner(u) {
-  S = { uid: u.uid, client: undefined, sub: undefined, cust: [], sales: [], tab: "sale", mode: "quick", sel: null, ledger: null, led: { s: [], r: [] }, drawn: false, registering: S.registering };
+  S = { uid: u.uid, client: undefined, sub: undefined, cust: [], sales: [], tab: "sale", mode: "quick", sel: null, sd: null, all: false, ledger: null, led: { s: [], r: [] }, drawn: false, registering: S.registering };
   const col = c => collection(db, "clients", u.uid, c);
   const onErr = e => show(`<div class="card"><div class="msg">${esc(errMsg(e))}</div><button class="btn ghost" id="lo">${t("logout")}</button></div>`);
   unsubs.push(onSnapshot(doc(db, "clients", u.uid), d => { S.client = d.exists() ? d.data() : null; gate(); }, onErr));
@@ -240,10 +252,10 @@ function viewOwner(u) {
   unsubs.push(onSnapshot(col("customers"), q => { S.cust = q.docs.map(d => ({ id: d.id, ...d.data() })); S.pc = q.metadata.hasPendingWrites; refresh(); }, onErr));
   S.listen = () => {
     S.unSales && S.unSales(); S.day = todayStr();
-    S.unSales = onSnapshot(query(col("sales"), where("date", "==", S.day)), q => { S.sales = q.docs.map(d => ({ id: d.id, ...d.data() })); S.ps = q.metadata.hasPendingWrites; refresh(); }, onErr);
+    S.unSales = onSnapshot(query(col("sales"), where("date", "==", curDate())), q => { S.sales = q.docs.map(d => ({ id: d.id, ...d.data() })); S.ps = q.metadata.hasPendingWrites; refresh(); }, onErr);
   };
   S.listen();
-  S.timer = setInterval(() => { if (S.day !== todayStr()) { S.listen(); refresh(); } }, 60000);
+  S.timer = setInterval(() => { if (!S.sd && S.day !== todayStr()) { S.listen(); refresh(); } }, 60000);
   unsubs.push(() => { stopLedger(); S.unSales && S.unSales(); clearInterval(S.timer); });
 }
 function gate() {
@@ -260,7 +272,7 @@ function refresh() {
   if (!S.drawn) return;
   if (S.ledger) return fillLedger();
   if (S.tab === "sale") { fillTop(); fillSaleList(); fillCc(); fillPick(); }
-  else if (S.tab === "cust") { fillTop(); fillCustList(); } else fillSet();
+  else if (S.tab === "cust") { fillTop(); fillCustList(); } else drawSet();
 }
 function banner() {
   const s = S.sub;
@@ -273,14 +285,35 @@ function fillTop() {
 }
 
 // ---------- বিক্রি ----------
+const curDate = () => S.sd || todayStr();
+const who = () => S.client.ownerName || S.client.shopName;
+
+// গুরুত্বপূর্ণ কাজে (এডিট, মেয়াদ বদল) অ্যাকাউন্টের পাসওয়ার্ড যাচাই
+function askPassword() {
+  return new Promise(res => {
+    const o = sheet(`<b>${t("pw_confirm")}</b><div class="tag">${t("pw_why")}</div><input id="cpw" type="password" autocomplete="current-password" style="margin-top:10px"><div class="msg" id="cpm"></div>
+    <div style="display:flex;gap:8px"><button class="btn ghost" id="cpx">${t("cancel_btn")}</button><button class="btn" id="cpo">${t("confirm")}</button></div>`);
+    const q = x => o.querySelector(x); q("#cpw").focus();
+    o.onclick = e => { if (e.target === o) { o.remove(); res(false); } };
+    q("#cpx").onclick = () => { o.remove(); res(false); };
+    q("#cpo").onclick = async () => {
+      try { const u = auth.currentUser; await reauthenticateWithCredential(u, EmailAuthProvider.credential(u.email, q("#cpw").value)); o.remove(); res(true); }
+      catch (e) { q("#cpm").textContent = errMsg(e); }
+    };
+  });
+}
+
 function drawSale() {
   show(`<div id="bn"></div><div class="card">${head()}
   <div class="seg"><button id="m1">${t("quick")}</button><button id="m2">${t("pick_cust")}</button></div>
   <label id="al"></label><input id="am" inputmode="decimal" autocomplete="off" style="font-size:26px;text-align:center">
-  <div id="cx"></div><div class="msg" id="m"></div><button class="btn" id="sv">${t("sale_save")}</button></div>
-  <div class="card"><b>${t("last5")}</b><div id="sl"></div></div>`, navHtml(OT, "sale"));
+  <input id="nt" placeholder="📝 ${t("note")}" autocomplete="off" style="margin-top:8px">
+  <div id="cx"></div><div class="msg" id="m"></div><button class="btn" id="sv" style="margin-top:6px">${t("sale_save")}</button></div>
+  <div class="card"><input type="date" id="dd" value="${curDate()}" max="${todayStr()}" style="margin-bottom:8px">
+  <b>${t("last10")}</b><div id="sl"></div></div>`, navHtml(OT, "sale"));
   $("#m1").onclick = () => setMode("quick"); $("#m2").onclick = () => setMode("cust");
   calcBind($("#am"), prev); $("#sv").onclick = saveSale;
+  $("#dd").onchange = e => { const v = e.target.value; S.sd = (!v || v === todayStr()) ? null : v; e.target.value = curDate(); S.all = false; S.sales = []; S.listen(); fillSaleList(); };
   setMode(S.mode); fillSaleList(); fillTop();
 }
 function setMode(m) {
@@ -293,10 +326,11 @@ function fillCx() {
   const cu = S.cust.find(x => x.id === S.sel);
   if (!cu) {
     S.sel = null;
-    c.innerHTML = `<label>${t("search_cust")}</label><input id="cq" autocomplete="off"><div id="cl"></div><button class="btn ghost sm" id="nc" style="margin-top:8px;width:100%">${t("new_cust")}</button>`;
-    $("#cq").oninput = fillPick; $("#nc").onclick = () => custSheet(null, id => { S.sel = id; fillCx(); }); fillPick(); return;
+    c.innerHTML = `<div style="position:relative"><label>${t("search_cust")}</label><input id="cq" autocomplete="off"><div id="cl" class="dd"></div></div>
+    <button class="link" id="nc" style="text-align:left;padding:6px 0">${t("new_cust")}</button>`;
+    $("#cq").oninput = fillPick; $("#nc").onclick = () => custSheet(null, id => { S.sel = id; fillCx(); }); return;
   }
-  c.innerHTML = `<div class="card" style="margin:12px 0 0" id="cc"></div>
+  c.innerHTML = `<div class="card" style="margin:10px 0 0" id="cc"></div>
   <label>${t("cash_got")}</label><input id="cash" inputmode="decimal" autocomplete="off">
   ${cu.balance > 0 ? `<label>${t("old_pay")}</label><input id="old" inputmode="decimal" autocomplete="off">` : ""}
   <div id="dp" class="row" style="flex-wrap:wrap;margin-top:6px"></div>`;
@@ -309,10 +343,13 @@ function fillCc() {
   ${cu.lastTxnDate ? `<div class="row"><span>${t("last_txn")}</span><span>${fmtD(cu.lastTxnDate)}</span></div>` : ""}`;
   $("#ch").onclick = () => { S.sel = null; fillCx(); }; prev();
 }
+// ড্রপডাউন: শুধু টাইপ করলে মিলে যাওয়া কাস্টমার দেখায়, খালি থাকলে কিছুই না
 function fillPick() {
   const l = $("#cl"); if (!l) return;
-  const q = ($("#cq")?.value || "").trim().toLowerCase();
-  const a = S.cust.filter(c => !q || c.name.toLowerCase().includes(q) || (c.phone || "").includes(norm(q))).sort(byName).slice(0, 6);
+  const q = ($("#cq").value || "").trim().toLowerCase();
+  if (!q) { l.style.display = "none"; l.innerHTML = ""; return; }
+  const a = S.cust.filter(c => c.name.toLowerCase().includes(q) || (c.phone || "").includes(norm(q))).sort(byName).slice(0, 6);
+  l.style.display = a.length ? "block" : "none";
   l.innerHTML = a.map(c => `<button class="pick" data-id="${c.id}">${esc(c.name)} <span class="tag">${esc(c.phone || "")}</span><span style="float:right" class="${c.balance > 0 ? "neg" : ""}">৳ ${n(c.balance)}</span></button>`).join("");
   l.querySelectorAll(".pick").forEach(b => b.onclick = () => { S.sel = b.dataset.id; fillCx(); });
 }
@@ -341,8 +378,8 @@ function saveSale() {
   }
   err("");
   const due = r2(total - cash), date = todayStr(), uid = S.uid, b = writeBatch(db);
-  const meta = { createdBy: uid, createdAt: serverTimestamp(), status: "active", date };
-  const sref = newRef("sales"), sale = { ...meta, type: cu ? "customer" : "quick", total, cash, due, history: [] };
+  const meta = { createdBy: uid, createdByName: who(), createdAt: serverTimestamp(), status: "active", date };
+  const sref = newRef("sales"), sale = { ...meta, type: cu ? "customer" : "quick", total, cash, due, note: $("#nt").value.trim(), history: [] };
   if (cu) { sale.customerId = cu.id; sale.customerName = cu.name; }
   if (old > 0) {
     const rref = newRef("receipts"); sale.receiptId = rref.id; sale.oldCollected = old;
@@ -354,24 +391,59 @@ function saveSale() {
   b.commit().catch(fail);
   if (cu) { const a = cu.balance, c = r2(a + due - old); toast(old > 0 ? t("ds2", { a: n(a), b: n(due), o: n(old), c: n(c) }) : t("ds1", { a: n(a), b: n(due), c: n(c) }), 6000); }
   else toast(t("sale_ok") + " ৳ " + n(total));
-  $("#am").value = ""; S.sel = null; fillCx(); $("#am").focus();
+  $("#am").value = ""; $("#nt").value = ""; S.sel = null; fillCx(); $("#am").focus();
+}
+
+// সিরিয়াল: ওই দিনের সব বিক্রি (বাতিলসহ) তৈরির সময় অনুযায়ী সাজিয়ে ১, ২, ৩…
+function serials() { const m = {}; [...S.sales].sort((a, b) => ms(a) - ms(b)).forEach((s, i) => m[s.id] = i + 1); return m; }
+function saleRow(s, sn) {
+  const dead = s.status === "cancelled", nm = s.type === "customer" ? esc(s.customerName) : t("sale_cash");
+  return `<div class="row" style="align-items:flex-start"><div style="flex:1"><div class="${dead ? "x" : ""}"><b>${t("sell")}-${dg(sn)} = ${n(s.total)} (${nm})${s.due > 0 ? ` (${t("due")}-${n(s.due)})` : ""}</b>
+  ${s.note ? `<div class="tag">📝 ${esc(s.note)}</div>` : ""}</div>
+  <div class="tag">${tm(ms(s))}${s.editedByName ? ` · ✎ ${t("edited_by")}${esc(s.editedByName)}` : ""}</div>
+  ${dead ? `<div class="tag neg">${t("cancel_by")}${esc(s.cancelledByName || "")}</div>` : ""}</div>
+  ${dead ? "" : `<div style="white-space:nowrap"><button class="ib" data-e="${s.id}">✎</button><button class="ib" data-c="${s.id}" style="color:var(--red)">${t("cancel")}</button></div>`}</div>`;
 }
 function fillSaleList() {
   const l = $("#sl"); if (!l) return;
-  const a = [...S.sales].sort((x, y) => ms(y) - ms(x)).slice(0, 5);
-  l.innerHTML = a.length ? a.map(s => {
-    const m = ms(s), can = s.status === "active" && Date.now() - m < 600000;
-    return `<div class="row ${s.status === "cancelled" ? "x" : ""}"><div><b>৳ ${n(s.total)}</b> <span class="tag">${esc(s.customerName || t("sale_cash"))}${s.due > 0 ? " · " + t("due") + " " + n(s.due) : ""}</span><div class="tag">${tm(m)}</div></div>
-    ${can ? `<button class="btn ghost sm" style="width:auto;padding:0 14px" data-id="${s.id}">${t("cancel")}</button>` : ""}</div>`;
-  }).join("") : `<div class="tag" style="padding-top:8px">${t("no_sales")}</div>`;
-  l.querySelectorAll("button[data-id]").forEach(b => b.onclick = () => cancelSale(S.sales.find(s => s.id === b.dataset.id)));
+  const sn = serials(), all = [...S.sales].sort((a, b) => ms(b) - ms(a)), a = S.all ? all : all.slice(0, 10);
+  l.innerHTML = (a.length ? a.map(s => saleRow(s, sn[s.id])).join("") : `<div class="tag" style="padding-top:6px">${t("no_sales")}</div>`) +
+    `<button class="btn ghost sm" id="al2" style="width:100%;margin-top:8px">${t(S.all ? "less" : "all")}${S.all ? "" : " (" + dg(all.length) + ")"}</button>`;
+  $("#al2").onclick = () => { S.all = !S.all; fillSaleList(); };
+  l.querySelectorAll("[data-e]").forEach(b => b.onclick = () => editSale(S.sales.find(s => s.id === b.dataset.e)));
+  l.querySelectorAll("[data-c]").forEach(b => b.onclick = () => cancelSale(S.sales.find(s => s.id === b.dataset.c)));
+}
+// এডিট = একই ডকুমেন্টে বদল (সিরিয়াল ও "Edited by" ঠিক থাকে); ক্যাশ/বাকি/দিনের যোগফল শুধু পার্থক্য ধরে ঠিক হয়
+function editSale(s) {
+  if (!s || s.status !== "active") return;
+  const isC = s.type === "customer", old = s.oldCollected || 0, sn = serials()[s.id];
+  const o = sheet(`<b>${t("edit_sale")}${sn ? " — " + t("sell") + "-" + dg(sn) : ""}</b>${isC ? `<div class="tag">${esc(s.customerName)}</div>` : ""}
+  <label>${t("total")}</label><input id="e1" inputmode="decimal" value="${s.total}">
+  ${isC ? `<label>${t("cash_got")}</label><input id="e2" inputmode="decimal" value="${s.cash}">` : ""}
+  ${old > 0 ? `<div class="tag" style="margin-top:6px">${t("old_note", { o: n(old) })}</div>` : ""}
+  <label>${t("note")}</label><input id="e3" value="${esc(s.note || "")}"><div class="msg" id="em2"></div><button class="btn" id="es" style="margin-top:6px">${t("save")}</button>`);
+  const q = x => o.querySelector(x), err = m => { q("#em2").textContent = m; };
+  q("#es").onclick = async () => {
+    const total = r2(calc(q("#e1").value)); if (!(total > 0)) return err(t("bad_amt"));
+    let cash = total;
+    if (isC) { const v = q("#e2").value.trim(); cash = v ? calc(v) : 0; if (isNaN(cash) || cash < 0) return err(t("bad_amt")); if (cash > total) return err(t("cash_gt")); cash = r2(cash); }
+    const note = q("#e3").value.trim();
+    if (!canWrite()) return err(t("e_perm"));
+    if (!(await askPassword())) return;
+    const due = r2(total - cash), dT = r2(total - s.total), dC = r2(cash - s.cash), dD = r2(due - s.due), uid = S.uid, b = writeBatch(db);
+    b.update(cref("sales", s.id), { total, cash, due, note, editedAt: serverTimestamp(), editedBy: uid, editedByName: who(),
+      history: arrayUnion({ at: Date.now(), by: uid, n: who(), a: "edit", before: { total: s.total, cash: s.cash, due: s.due, note: s.note || "" } }) });
+    if (s.customerId && dD) b.update(cref("customers", s.customerId), { balance: increment(dD) });
+    if (dT || dC) b.set(cref("days", s.date), { salesTotal: increment(dT), cashSales: increment(dC) }, { merge: true });
+    b.commit().catch(fail); toast(t("sale_edited"));
+  };
 }
 function cancelSale(s) {
   if (!s || s.status !== "active" || !confirm(t("confirm_cancel"))) return;
   if (!canWrite()) return toast(t("e_perm"));
   const uid = S.uid, b = writeBatch(db), old = s.oldCollected || 0;
-  const by = { status: "cancelled", cancelledAt: serverTimestamp(), cancelledBy: uid };
-  b.update(cref("sales", s.id), { ...by, history: arrayUnion({ at: Date.now(), by: uid, a: "cancel" }) });
+  const by = { status: "cancelled", cancelledAt: serverTimestamp(), cancelledBy: uid, cancelledByName: who() };
+  b.update(cref("sales", s.id), { ...by, history: arrayUnion({ at: Date.now(), by: uid, n: who(), a: "cancel" }) });
   if (old > 0 && s.receiptId) b.update(cref("receipts", s.receiptId), by);
   if (s.customerId) b.update(cref("customers", s.customerId), { balance: increment(r2(-(s.due - old))) });
   b.set(cref("days", s.date), { salesTotal: increment(-s.total), cashSales: increment(-s.cash), receipts: increment(-old) }, { merge: true });
@@ -381,7 +453,7 @@ function cancelReceipt(r) {
   if (!r || r.status !== "active" || !confirm(t("confirm_cancel"))) return;
   if (!canWrite()) return toast(t("e_perm"));
   const b = writeBatch(db);
-  b.update(cref("receipts", r.id), { status: "cancelled", cancelledAt: serverTimestamp(), cancelledBy: S.uid });
+  b.update(cref("receipts", r.id), { status: "cancelled", cancelledAt: serverTimestamp(), cancelledBy: S.uid, cancelledByName: who() });
   b.update(cref("customers", r.customerId), { balance: increment(r.amount) });
   b.set(cref("days", r.date), { receipts: increment(-r.amount) }, { merge: true });
   b.commit().catch(fail);
@@ -462,15 +534,19 @@ function fillLedger() {
   const c = S.cust.find(x => x.id === S.ledger); if (!c || !$("#lb")) return;
   $("#lb").innerHTML = `<span class="${c.balance > 0 ? "neg" : "pos"}">৳ ${n(Math.abs(c.balance))}</span><div class="tag">${c.balance > 0 ? t("will_get") : c.balance < 0 ? t("adv") : ""}</div>`;
   $("#li").textContent = [c.lastTxnDate ? t("last_txn") + ": " + fmtD(c.lastTxnDate) : "", c.creditLimit > 0 ? t("limit") + ": ৳ " + n(c.creditLimit) : ""].filter(Boolean).join(" · ");
-  const today = todayStr();
   const rows = [...S.led.s.map(x => ({ k: "s", x })), ...S.led.r.map(x => ({ k: "r", x }))].sort((a, b) => b.x.date.localeCompare(a.x.date) || ms(b.x) - ms(a.x));
   $("#lt").innerHTML = rows.length ? rows.map(({ k, x }) => {
-    const dead = x.status === "cancelled", can = !dead && x.date === today && !(k === "r" && x.fromSaleId);
+    const dead = x.status === "cancelled", canC = !dead && !(k === "r" && x.fromSaleId);
     const right = k === "s" ? (x.due > 0 ? `<b class="neg">+${n(x.due)}</b>` : `<b>${n(x.total)}</b>`) : `<b class="pos">−${n(x.amount)}</b>`;
-    const lbl = k === "s" ? (x.due > 0 ? `${t("sale_credit")} ৳${n(x.total)} · ${t("cash_got").replace(/ \(৳\)/, "")} ${n(x.cash)}` : `${t("sale_cash")} ৳${n(x.total)}`) : t("collected");
-    return `<div class="row ${dead ? "x" : ""}"><div>${lbl}<div class="tag">${fmtD(x.date)}</div></div><div style="text-align:right">${right}${can ? `<div><button class="link" style="padding:2px 0" data-k="${k}" data-id="${x.id}">${t("cancel")}</button></div>` : ""}</div></div>`;
+    const lbl = k === "s" ? (x.due > 0 ? `${t("sale_credit")} ৳${n(x.total)} · ${t("cash_got").replace(" (৳)", "")} ${n(x.cash)}` : `${t("sale_cash")} ৳${n(x.total)}`) : t("collected");
+    return `<div class="row" style="align-items:flex-start"><div style="flex:1"><div class="${dead ? "x" : ""}">${lbl}${x.note ? `<div class="tag">📝 ${esc(x.note)}</div>` : ""}</div>
+    <div class="tag">${fmtD(x.date)}${x.editedByName ? ` · ✎ ${t("edited_by")}${esc(x.editedByName)}` : ""}</div>${dead ? `<div class="tag neg">${t("cancel_by")}${esc(x.cancelledByName || "")}</div>` : ""}</div>
+    <div style="text-align:right"><span class="${dead ? "x" : ""}">${right}</span>${dead ? "" : `<div>${k === "s" ? `<button class="ib" data-a="e" data-k="${k}" data-id="${x.id}">✎</button>` : ""}${canC ? `<button class="ib" data-a="c" data-k="${k}" data-id="${x.id}" style="color:var(--red)">${t("cancel")}</button>` : ""}</div>`}</div></div>`;
   }).join("") : `<div class="tag">${t("no_entries")}</div>`;
-  $("#lt").querySelectorAll("[data-id]").forEach(b => b.onclick = () => b.dataset.k === "s" ? cancelSale(S.led.s.find(s => s.id === b.dataset.id)) : cancelReceipt(S.led.r.find(r => r.id === b.dataset.id)));
+  $("#lt").querySelectorAll("[data-id]").forEach(b => b.onclick = () => {
+    const sale = b.dataset.k === "s", item = (sale ? S.led.s : S.led.r).find(z => z.id === b.dataset.id);
+    if (b.dataset.a === "e") editSale(item); else sale ? cancelSale(item) : cancelReceipt(item);
+  });
 }
 function reconcile(c) {
   const act = a => a.filter(x => x.status === "active");
@@ -479,24 +555,57 @@ function reconcile(c) {
   updateDoc(cref("customers", c.id), { balance: sum }).then(() => toast(t("rec_fixed"))).catch(fail);
 }
 
-// ---------- মালিকের সেটিংস ----------
-function drawSet() {
-  const c = S.client;
-  show(`<div class="card">${head()}<div class="row"><span>${t("status")}</span><span id="st"></span></div>
-  <div class="row"><span>${t("plan")} / ${t("mode")}</span><b id="pm"></b></div><div class="row"><span>${t("expiry")}</span><b id="ex"></b></div></div>
-  <div class="card"><b>${t("prof_t")}</b><label>${t("shop")}</label><input id="f1" value="${esc(c.shopName)}">
-  <label>${t("owner")}</label><input id="f2" value="${esc(c.ownerName)}"><label>${t("phone")}${t("opt")}</label><input id="f3" inputmode="tel" value="${esc(c.phone)}">
-  <div class="msg" id="m"></div><button class="btn" id="sp">${t("save")}</button></div>${langCard()}<button class="btn ghost" id="lo">${t("logout")}</button>`, navHtml(OT, "set"));
-  bindLang(); fillSet();
-  $("#sp").onclick = () => {
-    const shopName = $("#f1").value.trim(), ownerName = $("#f2").value.trim(), phone = $("#f3").value.trim();
-    if (!shopName || !ownerName) return $("#m").textContent = t("bad_name");
-    updateDoc(doc(db, "clients", S.uid), { shopName, ownerName, phone }).then(() => { $("#m").className = "msg ok"; $("#m").textContent = t("saved"); }).catch(e => $("#m").textContent = errMsg(e));
+// ---------- সেটিংস (সংক্ষিপ্ত সারি, এডিট চাপলে তবেই খোলে) ----------
+const srow = (lbl, val, key) => `<div class="srow"><span>${lbl}</span><b>${val}</b>${key ? `<button class="ib" data-ed="${key}">✎</button>` : ""}</div>`;
+function fieldSheet(title, val, save, mode) {
+  const o = sheet(`<b>${title}</b><input id="fv" ${mode ? `inputmode="${mode}"` : ""} value="${esc(val)}" style="margin-top:10px"><div class="msg" id="fm"></div><button class="btn" id="fs" style="margin-top:6px">${t("save")}</button>`);
+  const i = o.querySelector("#fv"); i.focus();
+  o.querySelector("#fs").onclick = async () => {
+    try { const r = await save(i.value.trim()); if (r) { o.querySelector("#fm").textContent = r; return; } closeSheet(); } catch (e) { o.querySelector("#fm").textContent = errMsg(e); }
   };
 }
-function fillSet() {
-  if (!$("#st")) return;
-  $("#st").innerHTML = statusBadge(S.sub); $("#pm").textContent = S.sub ? S.sub.plan + " / " + S.sub.mode : "—"; $("#ex").textContent = S.sub ? fmtDate(S.sub.expiresAt) : "—";
+function pickSheet(kind) {
+  const opts = kind === "lang" ? [["bn", "বাংলা"], ["en", "English"]] : [["bn", "০১২৩"], ["en", "0123"]], cur = kind === "lang" ? P.lang : P.dig;
+  const o = sheet(`<b>${t(kind === "lang" ? "lang" : "digits")}</b><div class="seg">${opts.map(([v, l]) => `<button data-v="${v}" class="${v === cur ? "on" : ""}">${l}</button>`).join("")}</div>`);
+  o.querySelectorAll("[data-v]").forEach(b => b.onclick = () => {
+    if (kind === "lang") { P.lang = b.dataset.v; LS.s("lang", P.lang); } else { P.dig = b.dataset.v; LS.s("dig", P.dig); }
+    closeSheet(); rerender();
+  });
+}
+function pwSheet() {
+  const o = sheet(`<b>${t("pw_chg")}</b><label>${t("pw_cur")}</label><input id="p1" type="password" autocomplete="current-password">
+  <label>${t("pw_new")}</label><input id="p2" type="password" autocomplete="new-password"><label>${t("pw_new2")}</label><input id="p3" type="password" autocomplete="new-password">
+  <div class="msg" id="pm2"></div><button class="btn" id="ps" style="margin-top:6px">${t("save")}</button>`);
+  const q = x => o.querySelector(x);
+  q("#ps").onclick = async () => {
+    const a = q("#p1").value, b = q("#p2").value;
+    if (b.length < 6) return q("#pm2").textContent = t("e_weak");
+    if (b !== q("#p3").value) return q("#pm2").textContent = t("pw_mis");
+    try { const u = auth.currentUser; await reauthenticateWithCredential(u, EmailAuthProvider.credential(u.email, a)); await updatePassword(u, b); closeSheet(); toast(t("pw_done")); }
+    catch (e) { q("#pm2").textContent = errMsg(e); }
+  };
+}
+const commonRows = () => srow(t("lang"), P.lang === "en" ? "English" : "বাংলা", "lang") + srow(t("digits"), P.dig === "bn" ? "০১২৩" : "0123", "dig") + srow(t("pw_chg"), "••••••", "pw");
+function bindEd(extra) {
+  document.querySelectorAll("[data-ed]").forEach(b => b.onclick = () => {
+    const k = b.dataset.ed;
+    if (k === "lang" || k === "dig") return pickSheet(k);
+    if (k === "pw") return pwSheet();
+    extra(k);
+  });
+}
+function drawSet() {
+  const c = S.client, s = S.sub;
+  const upd = (key, req) => v => { if (req && !v) return t("bad_name"); updateDoc(doc(db, "clients", S.uid), { [key]: v }).then(() => toast(t("saved"))).catch(fail); };
+  show(`<div class="card">${head()}${srow(t("status"), statusBadge(s))}${srow(t("plan") + " / " + t("mode"), s ? esc(s.plan + " / " + s.mode) : "—")}${srow(t("expiry"), s ? fmtDate(s.expiresAt) : "—")}</div>
+  <div class="card"><div class="sh2">${t("prof_t")}</div>${srow(t("shop"), esc(c.shopName), "shop")}${srow(t("owner"), esc(c.ownerName), "owner")}${srow(t("phone"), esc(c.phone) || "—", "phone")}</div>
+  <div class="card"><div class="sh2">${t("app_t")}</div>${commonRows()}</div>
+  <button class="btn ghost sm" id="lo" style="width:100%">${t("logout")}</button>`, navHtml(OT, "set"));
+  bindEd(k => {
+    if (k === "shop") fieldSheet(t("shop"), c.shopName, upd("shopName", 1));
+    if (k === "owner") fieldSheet(t("owner"), c.ownerName, upd("ownerName", 1));
+    if (k === "phone") fieldSheet(t("phone") + t("opt"), c.phone || "", upd("phone"), "tel");
+  });
 }
 
 // ================= অ্যাডমিন =================
@@ -506,27 +615,45 @@ function viewAdmin() {
   const redraw = () => { if (A.tab === "clients") drawAdmin(); };
   unsubs.push(onSnapshot(collection(db, "clients"), q => { A.c = q.docs.map(d => ({ id: d.id, ...d.data() })); redraw(); }, onErr));
   unsubs.push(onSnapshot(collection(db, "subscriptions"), q => { A.s = {}; q.docs.forEach(d => A.s[d.id] = d.data()); redraw(); }, onErr));
-  unsubs.push(onSnapshot(doc(db, "config", "app"), d => { A.trial = d.exists() && Number.isInteger(d.data().trialDays) ? d.data().trialDays : DEFAULT_TRIAL_DAYS; if (A.tab === "set" && document.activeElement?.id !== "td") drawAdmin(); }, onErr));
+  unsubs.push(onSnapshot(doc(db, "config", "app"), d => { A.trial = d.exists() && Number.isInteger(d.data().trialDays) ? d.data().trialDays : DEFAULT_TRIAL_DAYS; if (A.tab === "set") drawAdmin(); }, onErr));
   drawAdmin();
 }
 function drawAdmin() {
   const nv = navHtml(AT, A.tab);
   if (A.tab === "clients") {
-    show(`<div class="card"><h1>${t("tab_clients")}</h1><div class="brand">Quick Hisab by FaBi Hub</div><div class="sub">${t("clients_n", { n: n(A.c.length) })}</div>
-    ${A.c.map(x => `<div class="row"><div><b>${esc(x.shopName)}</b><div class="tag">${contact(x)}</div></div>
-    <div style="text-align:right">${statusBadge(A.s[x.id])}<div class="tag">${A.s[x.id] ? esc(A.s[x.id].plan) + " / " + esc(A.s[x.id].mode) : ""}</div></div></div>`).join("") || `<div class="tag">${t("no_clients")}</div>`}</div>`, nv);
+    show(`<div class="card"><h1>${t("tab_clients")}</h1><div class="brand">Quick Hisab by FaBi Hub · ${t("clients_n", { n: n(A.c.length) })}</div>
+    ${A.c.map(x => { const s = A.s[x.id]; return `<div class="row" data-id="${x.id}" style="cursor:pointer"><div><b>${esc(x.shopName)}</b><div class="tag">${contact(x)}</div></div>
+    <div style="text-align:right">${statusBadge(s)}<div class="tag">${s ? esc(s.plan) + " / " + esc(s.mode) + " · " + fmtDate(s.expiresAt) : ""}</div></div></div>`; }).join("") || `<div class="tag">${t("no_clients")}</div>`}</div>`, nv);
+    $("#main").querySelectorAll(".row[data-id]").forEach(r => r.onclick = () => subSheet(r.dataset.id));
     return;
   }
   show(`<div class="card"><h1>${t("tab_set")}</h1><div class="brand">Quick Hisab by FaBi Hub</div>
-  <label>${t("trial_lbl")}</label><input id="td" inputmode="numeric" value="${A.trial}"><div class="msg ${A.ok ? "ok" : ""}" id="tm">${A.note || ""}</div>
-  <button class="btn" id="ts">${t("save")}</button><div class="tag" style="margin-top:8px">${t("trial_note")}</div></div>${langCard()}
-  <button class="btn ghost" id="lo">${t("logout")}</button>`, nv);
-  bindLang(); A.note = "";
-  $("#ts").onclick = async () => {
-    const raw = norm($("#td").value).trim(), v = Number(raw);
-    if (raw === "" || !Number.isInteger(v) || v < 0 || v > 365) { $("#tm").className = "msg"; $("#tm").textContent = t("trial_bad"); return; }
-    try { await setDoc(doc(db, "config", "app"), { trialDays: v }, { merge: true }); A.trial = v; A.ok = true; A.note = t("saved"); } catch (e) { A.ok = false; A.note = errMsg(e); }
-    drawAdmin();
+  ${srow(t("trial_s"), dg(A.trial) + " " + t("dayu"), "trial")}<div class="tag" style="margin:-2px 0 8px">${t("trial_note")}</div>${commonRows()}</div>
+  <button class="btn ghost sm" id="lo" style="width:100%">${t("logout")}</button>`, nv);
+  bindEd(k => {
+    if (k === "trial") fieldSheet(t("trial_lbl"), A.trial, async v => {
+      const x = Number(norm(v)); if (v === "" || !Number.isInteger(x) || x < 0 || x > 365) return t("trial_bad");
+      await setDoc(doc(db, "config", "app"), { trialDays: x }, { merge: true }); toast(t("saved"));
+    }, "numeric");
+  });
+}
+// ক্লায়েন্টের মেয়াদ বদল: পাসওয়ার্ড লাগে, কমালে সতর্কতা
+function subSheet(id) {
+  const x = A.c.find(c => c.id === id), s = A.s[id]; if (!x) return;
+  const cur = s ? s.expiresAt.toDate() : new Date();
+  const o = sheet(`<b>${esc(x.shopName)}</b><div class="tag">${contact(x)}</div>
+  <div class="row"><span>${t("cur_exp")}</span><b>${s ? fmtDate(s.expiresAt) : "—"}</b></div>
+  <label>${t("new_exp")}</label><input type="date" id="ne" value="${dstr(cur)}">
+  <div class="seg"><button data-add="30">${t("plus30")}</button><button data-add="365">${t("plus365")}</button></div>
+  <div class="msg" id="nm"></div><button class="btn" id="ns" style="margin-top:6px">${t("save")}</button>`);
+  const q = z => o.querySelector(z);
+  o.querySelectorAll("[data-add]").forEach(b => b.onclick = () => { const d = new Date(Math.max(Date.now(), cur.getTime())); d.setDate(d.getDate() + +b.dataset.add); q("#ne").value = dstr(d); });
+  q("#ns").onclick = async () => {
+    if (!s) return q("#nm").textContent = t("b_none");
+    const v = q("#ne").value, nd = new Date(v + "T23:59:59"); if (!v || isNaN(nd)) return q("#nm").textContent = t("bad_date");
+    if (nd < cur && !confirm(t("warn_reduce", { a: fmtDate(s.expiresAt), b: fmtD(v), d: n(Math.ceil((cur - nd) / 864e5)) }))) return;
+    if (!(await askPassword())) return;
+    updateDoc(doc(db, "subscriptions", id), { expiresAt: Timestamp.fromDate(nd) }).then(() => toast(t("exp_saved"))).catch(fail);
   };
 }
 
