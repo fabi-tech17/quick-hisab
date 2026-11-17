@@ -37,7 +37,7 @@ input:focus{outline:2px solid var(--maroon);border-color:var(--maroon)}
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, collection, onSnapshot, writeBatch, addDoc, serverTimestamp, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, collection, onSnapshot, writeBatch, addDoc, getDoc, setDoc, serverTimestamp, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // ====== এখানে আপনার নতুন প্রজেক্টের তথ্য বসান ======
 const firebaseConfig = {
@@ -49,7 +49,7 @@ const firebaseConfig = {
   appId: "1:510580019934:web:05a052d087552352e0684f"
 };
 const ADMIN_UID = "ez6HcRZeunUy4fVEdFNBtxrzrDe2";   // Firestore Rules-এর UID-র সাথে হুবহু এক
-const TRIAL_DAYS = 30, RENEW_WARN_DAYS = 7, GRACE_DAYS = 3; // GRACE_DAYS Rules-এর ৩-এর সাথে মিলতে হবে
+const DEFAULT_TRIAL_DAYS = 30, RENEW_WARN_DAYS = 7, GRACE_DAYS = 3; // GRACE_DAYS Rules-এর ৩-এর সাথে মিলতে হবে; ট্রায়ালের দিন এখন অ্যাডমিন প্যানেল থেকে ঠিক হয় (DEFAULT_TRIAL_DAYS শুধু ফ্যালব্যাক)
 // ====================================================
 
 const app = initializeApp(firebaseConfig);
@@ -62,6 +62,7 @@ const root = $("#app");
 const show = h => { root.innerHTML = h; $("#lo")?.addEventListener("click", () => signOut(auth)); };
 const loading = '<div class="center">লোড হচ্ছে…</div>';
 const fmtDate = ts => { const d = ts.toDate(); return d.getDate() + "/" + (d.getMonth() + 1) + "/" + d.getFullYear(); };
+const contact = c => [c.ownerName, c.phone].filter(Boolean).map(esc).join(" · ");
 const ERR = {
   "auth/invalid-credential": "ইমেইল বা পাসওয়ার্ড ভুল।", "auth/invalid-email": "ইমেইল ঠিক নয়।",
   "auth/email-already-in-use": "এই ইমেইলে আগেই অ্যাকাউন্ট আছে।", "auth/weak-password": "পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের দিন।",
@@ -77,17 +78,19 @@ let S = {};
 function profileFields() {
   return `<label>দোকানের নাম</label><input id="shop" required>
   <label>মালিকের নাম</label><input id="own" required>
-  <label>মোবাইল নম্বর</label><input id="ph" inputmode="tel" required>`;
+  <label>মোবাইল নম্বর (ঐচ্ছিক)</label><input id="ph" inputmode="tel">`;
 }
 function readProfile() {
   return { shopName: $("#shop").value.trim(), ownerName: $("#own").value.trim(), phone: $("#ph").value.trim() };
 }
 async function createProfile(p) {
   const uid = auth.currentUser.uid, b = writeBatch(db);
+  let days = DEFAULT_TRIAL_DAYS;
+  try { const c = await getDoc(doc(db, "config", "app")); if (c.exists() && Number.isInteger(c.data().trialDays)) days = c.data().trialDays; } catch (e) {}
   b.set(doc(db, "clients", uid), { ...p, appType: "grocery", createdAt: serverTimestamp() });
   b.set(doc(db, "subscriptions", uid), {
     plan: "trial", mode: "simple", status: "active", startAt: serverTimestamp(),
-    expiresAt: Timestamp.fromMillis(Date.now() + TRIAL_DAYS * 864e5)
+    expiresAt: Timestamp.fromMillis(Date.now() + days * 864e5)
   });
   await b.commit();
 }
@@ -98,7 +101,7 @@ function viewAuth(mode = "login") {
   <label>ইমেইল</label><input id="em" type="email" autocomplete="email" required>
   <label>পাসওয়ার্ড</label><input id="pw" type="password" minlength="6" autocomplete="${reg ? "new-password" : "current-password"}" required>
   <div class="msg" id="m"></div>
-  <button class="btn" id="go">${reg ? "রেজিস্টার (৩০ দিন ফ্রি)" : "লগইন"}</button></form>
+  <button class="btn" id="go">${reg ? "রেজিস্টার (ফ্রি ট্রায়াল)" : "লগইন"}</button></form>
   ${reg ? "" : '<button class="link" id="fp">পাসওয়ার্ড ভুলে গেছেন?</button>'}
   <button class="link" id="sw">${reg ? "অ্যাকাউন্ট আছে? লগইন" : "নতুন অ্যাকাউন্ট খুলুন"}</button></div>`);
   $("#sw").onclick = () => viewAuth(reg ? "login" : "reg");
@@ -147,7 +150,7 @@ function renderOwner() {
   if (c === undefined || s === undefined) return show(loading);
   if (c === null) return S.registering ? show(loading) : viewProfile();
   show(`<div class="card"><h1>${esc(c.shopName)}</h1><div class="brand">Quick Hisab by FaBi Hub</div>
-  <div class="row"><span>মালিক</span><b>${esc(c.ownerName)} · ${esc(c.phone)}</b></div>
+  <div class="row"><span>মালিক</span><b>${contact(c)}</b></div>
   <div class="row"><span>অবস্থা</span>${statusBadge(s)}</div>
   ${s ? `<div class="row"><span>প্ল্যান / মোড</span><b>${esc(s.plan)} / ${esc(s.mode)}</b></div>
   <div class="row"><span>মেয়াদ</span><b>${fmtDate(s.expiresAt)}</b></div>` : ""}
@@ -171,14 +174,31 @@ function viewOwner(u) {
 
 // ---------- অ্যাডমিন স্ক্রিন (এখন শুধু তালিকা) ----------
 function viewAdmin() {
-  const A = { c: [], s: {} };
-  const draw = () => show(`<div class="card"><h1>অ্যাডমিন</h1><div class="brand">Quick Hisab by FaBi Hub</div><div class="sub">ক্লায়েন্ট: ${A.c.length}</div>
-  ${A.c.map(x => `<div class="row"><div><b>${esc(x.shopName)}</b><div class="sub" style="margin:0">${esc(x.ownerName)} · ${esc(x.phone)}</div></div>
-  <div style="text-align:right">${statusBadge(A.s[x.id])}<div class="sub" style="margin:2px 0 0">${A.s[x.id] ? esc(A.s[x.id].plan) + " / " + esc(A.s[x.id].mode) : ""}</div></div></div>`).join("") || '<div class="sub">এখনো কোনো ক্লায়েন্ট নেই</div>'}</div>
-  <button class="btn ghost" id="lo">লগআউট</button>`);
+  const A = { c: [], s: {}, trial: DEFAULT_TRIAL_DAYS, draft: undefined, note: "", ok: false };
+  const draw = () => {
+    show(`<div class="card"><h1>অ্যাডমিন</h1><div class="brand">Quick Hisab by FaBi Hub</div><div class="sub">ক্লায়েন্ট: ${A.c.length}</div>
+    ${A.c.map(x => `<div class="row"><div><b>${esc(x.shopName)}</b><div class="sub" style="margin:0">${contact(x)}</div></div>
+    <div style="text-align:right">${statusBadge(A.s[x.id])}<div class="sub" style="margin:2px 0 0">${A.s[x.id] ? esc(A.s[x.id].plan) + " / " + esc(A.s[x.id].mode) : ""}</div></div></div>`).join("") || '<div class="sub">এখনো কোনো ক্লায়েন্ট নেই</div>'}</div>
+    <div class="card"><b>সেটিংস</b>
+    <label>নতুন ক্লায়েন্টের ফ্রি ট্রায়াল (দিন)</label>
+    <input id="td" type="number" inputmode="numeric" min="0" max="365" value="${esc(A.draft ?? A.trial)}">
+    <div class="msg ${A.ok ? "ok" : ""}" id="tm">${esc(A.note)}</div>
+    <button class="btn" id="ts">সেভ করুন</button>
+    <div class="sub" style="margin:8px 0 0">শুধু এরপর রেজিস্টার করা ক্লায়েন্টদের জন্য প্রযোজ্য। আগের ক্লায়েন্টদের মেয়াদ বদলায় না।</div></div>
+    <button class="btn ghost" id="lo">লগআউট</button>`);
+    $("#td").oninput = e => { A.draft = e.target.value; A.note = ""; };
+    $("#ts").onclick = async () => {
+      const raw = $("#td").value.trim(), n = Number(raw);
+      if (raw === "" || !Number.isInteger(n) || n < 0 || n > 365) { $("#tm").className = "msg"; $("#tm").textContent = "০ থেকে ৩৬৫-এর মধ্যে পূর্ণ সংখ্যা দিন।"; return; }
+      try { await setDoc(doc(db, "config", "app"), { trialDays: n }, { merge: true }); A.trial = n; A.draft = undefined; A.ok = true; A.note = "সেভ হয়েছে ✓"; }
+      catch (e) { A.ok = false; A.note = errMsg(e); }
+      draw();
+    };
+  };
   const onErr = e => show(`<div class="card"><div class="msg">${esc(errMsg(e))}</div><button class="btn ghost" id="lo">লগআউট</button></div>`);
   unsubs.push(onSnapshot(collection(db, "clients"), q => { A.c = q.docs.map(d => ({ id: d.id, ...d.data() })); draw(); }, onErr));
   unsubs.push(onSnapshot(collection(db, "subscriptions"), q => { A.s = {}; q.docs.forEach(d => A.s[d.id] = d.data()); draw(); }, onErr));
+  unsubs.push(onSnapshot(doc(db, "config", "app"), d => { A.trial = d.exists() && Number.isInteger(d.data().trialDays) ? d.data().trialDays : DEFAULT_TRIAL_DAYS; draw(); }, onErr));
 }
 
 // ---------- রোল দেখে রাউটিং ----------
