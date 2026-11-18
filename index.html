@@ -51,16 +51,29 @@ nav button.on{color:var(--maroon);font-weight:700}
 .sh2{font-size:13px;font-weight:700;color:var(--maroon);margin:0 0 8px}
 .dd{display:none;position:absolute;left:0;right:0;z-index:20;background:#fff;border:1px solid var(--line);border-radius:10px;max-height:240px;overflow:auto;box-shadow:0 6px 16px rgba(0,0,0,.12)}
 .dd .pick{margin:0;border:0;border-bottom:1px solid var(--line);border-radius:0}
+#hd{position:fixed;top:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--card);border-bottom:1px solid var(--line);z-index:35;padding:calc(5px + env(safe-area-inset-top)) 12px 5px}
+#hd:empty{display:none}
+#hd .d{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;font-size:11px;color:var(--soft)}
+#hd .d span:first-child{flex:1;min-width:0}
+#hd .t{white-space:nowrap;font-weight:600;color:var(--ink)}
+#hd .s{font-size:16px;font-weight:700;color:var(--maroon);line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#hd .b{font-size:11px;color:var(--soft);letter-spacing:.3px}
+body.hd #app{padding-top:calc(72px + env(safe-area-inset-top))}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:8px 0}
+.bx{background:#F1E9D4;border-radius:10px;padding:6px 4px;text-align:center}.bx small{display:block;font-size:11px;color:var(--soft)}.bx b{font-size:15px}
+.rt{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:8px}.rt th,.rt td{border:1px solid #cfc6ad;padding:4px 6px;text-align:left}.rt th{background:#efe6cf}.rt td.n{text-align:right}.rt tr.ft td{font-weight:700;background:#f6f0df}
+.rep h3{margin:0 0 2px;color:var(--maroon)}.rep h4{margin:10px 0 4px;font-size:13px}
 </style>
 </head>
 <body>
+<header id="hd"></header>
 <div id="app"><main id="main"></main><nav id="nav"></nav></div>
 <div id="toast"></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signOut, reauthenticateWithCredential, EmailAuthProvider, updatePassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, collection, onSnapshot, writeBatch, getDoc, setDoc, updateDoc, query, where, increment, arrayUnion, serverTimestamp, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, collection, onSnapshot, writeBatch, getDoc, setDoc, updateDoc, query, where, increment, arrayUnion, serverTimestamp, Timestamp, getDocs, documentId, deleteField } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBKGFO5vpJlOWjbVkcEQVb_ipfr6oZnb68",
@@ -79,7 +92,7 @@ const db = initializeFirestore(app, { localCache: persistentLocalCache({ tabMana
 
 // ================= ভাষা ও সংখ্যা =================
 const LS = { g: k => { try { return localStorage.getItem(k); } catch (e) { return null; } }, s: (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} } };
-const P = { lang: LS.g("lang") || "bn", dig: LS.g("dig") || "bn" };
+const P = { lang: LS.g("lang") || "bn", dig: LS.g("dig") || "bn", bd: LS.g("bd") ?? "1", sec: LS.g("sec") ?? "1", h12: LS.g("h12") ?? "1" };
 const T = {
   loading:["লোড হচ্ছে…","Loading…"], login:["লগইন","Login"], reg:["রেজিস্টার (ফ্রি ট্রায়াল)","Register (free trial)"],
   email:["ইমেইল","Email"], pw:["পাসওয়ার্ড","Password"], shop:["দোকানের নাম","Shop name"], owner:["মালিকের নাম","Owner name"],
@@ -138,7 +151,31 @@ const T = {
   exp_l:["খরচ","Expense"], wd_l:["মালিকের উত্তোলন","Owner withdrawal"], exp_last:["শেষ ১০টা খরচ","Last 10 expenses"], wd_last:["শেষ ১০টা উত্তোলন","Last 10 withdrawals"],
   cat:["ধরন (যেমন ভাড়া, বিল)","Category (e.g. rent, bill)"], cat_other:["অন্যান্য","Other"], c1:["ভাড়া","Rent"], c2:["বিদ্যুৎ বিল","Electricity bill"], c3:["কর্মচারীর বেতন","Staff salary"], c4:["পরিবহন","Transport"],
   rec_t:["মাসিক বাঁধা খরচ","Monthly fixed expenses"], rec_add:["+ যোগ","+ Add"], rec_paid:["✔ দেওয়া হয়েছে","✔ Paid"], rec_pay:["দিলাম","Paid"], rec_none:["কোনো বাঁধা খরচ নেই","No fixed expenses"],
-  rec_title:["খরচের নাম","Expense name"], rec_off:["বন্ধ করুন","Disable"], exp_ok:["খরচ সেভ হয়েছে","Expense saved"], wd_ok:["উত্তোলন সেভ হয়েছে","Withdrawal saved"]
+  rec_title:["খরচের নাম","Expense name"], rec_off:["বন্ধ করুন","Disable"], exp_ok:["খরচ সেভ হয়েছে","Expense saved"], wd_ok:["উত্তোলন সেভ হয়েছে","Withdrawal saved"],
+  dup_name:["এই নামে আগে থেকেই আছে — আলাদা নাম দিন","This name already exists — use a different name"],
+  tot_sell:["মোট বিক্রি","Total sales"], tot_buy:["মোট ক্রয়","Total purchases"], tot_recv:["মোট আদায়","Total received"], tot_paid:["মোট শোধ","Total paid"],
+  tot_bal_c:["মোট বাকি","Balance due"], tot_bal_s:["মোট দেনা","Balance payable"], open_l:["শুরুর ব্যালেন্স","Opening balance"],
+  edate:["তারিখ","Date"], bad_edate:["তারিখ আজ থেকে সর্বোচ্চ ৭ দিন আগে পর্যন্ত হতে পারে","Date can be at most 7 days back"],
+  locked_msg:["এই দিনের হিসাব বন্ধ (বা ৬০ দিনের বেশি পুরোনো)। হিসাব ট্যাবে গিয়ে দিন আবার খুলুন।","This day is closed (or older than 60 days). Reopen it from the Accounts tab."],
+  hdr_t:["হেডারের তারিখ ও সময়","Header date & time"], hdr_bd:["বাংলা তারিখ","Bangla date"], hdr_sec:["সেকেন্ড","Seconds"], hdr_fmt:["সময়ের ধরন","Time format"],
+  show:["দেখান","Show"], hide:["লুকান","Hide"], hdr_sec_s:["সেকেন্ড","Seconds"], hdr_bd_s:["বাংলা তারিখ","Bangla date"],
+  tab_acc:["হিসাব","Accounts"], cash_t:["ক্যাশ ও দিন বন্ধ","Cash & day close"], rep_t:["রিপোর্ট","Reports"],
+  c_open:["সকালের ক্যাশ","Opening cash"], c_cs:["নগদ বিক্রি","Cash sales"], c_rc:["বাকি আদায়","Dues collected"], c_cp:["নগদ ক্রয়","Cash purchases"],
+  c_sp:["সাপ্লায়ার শোধ","Supplier payments"], c_ex:["খরচ","Expenses"], c_wd:["মালিকের উত্তোলন","Owner withdrawal"],
+  c_exp:["রাতের ক্যাশ (হিসাব অনুযায়ী)","Closing cash (expected)"], c_stot:["মোট বিক্রি","Total sales"], c_ptot:["মোট ক্রয়","Total purchases"],
+  c_count:["গোনা ক্যাশ (৳)","Counted cash (৳)"], c_diff:["অমিল","Difference"], close_btn:["দিনের হিসাব বন্ধ করুন","Close the day"], closed_l:["হিসাব বন্ধ","Day closed"],
+  reopen:["দিন আবার খুলুন","Reopen day"], close_ask:["{d} তারিখের হিসাব বন্ধ করবেন? এরপর এই দিনের এন্ট্রি বদলানো যাবে না।","Close {d}? Entries for this day can no longer be changed."],
+  close_diff:["অমিল ৳{x}। তবুও বন্ধ করবেন? (গোনা ক্যাশই পরের দিনের সকালের ক্যাশ হবে)","Difference ৳{x}. Close anyway? (Counted cash becomes the next day's opening)"],
+  close_order:["আগে পরের বন্ধ দিনগুলো খুলুন","Reopen the later closed days first"], reopen_order:["শুধু সর্বশেষ বন্ধ দিনটাই আবার খোলা যায়","Only the latest closed day can be reopened"],
+  rep_sum:["মাসিক সারসংক্ষেপ","Monthly summary"], rep_exp:["খরচ — খাত অনুযায়ী","Expenses by category"], rep_make:["PDF বানানো হচ্ছে…","Creating PDF…"],
+  rs_head:["সারসংক্ষেপ","Summary"], rs_daily:["দিন অনুযায়ী","Day by day"], r_item:["বিষয়","Item"], r_amt:["অঙ্ক","Amount"],
+  rs_sales:["মোট বিক্রি","Total sales"], rs_cashs:["— নগদ বিক্রি","— Cash sales"], rs_credits:["— বাকি বিক্রি","— Credit sales"], rs_recv:["বাকি আদায়","Dues collected"],
+  rs_buy:["মোট ক্রয়","Total purchases"], rs_cashb:["— নগদ ক্রয়","— Cash purchases"], rs_credb:["— বাকি ক্রয়","— Credit purchases"], rs_paid:["সাপ্লায়ার শোধ","Supplier payments"],
+  rs_exp:["মোট খরচ","Total expenses"], rs_wd:["মালিকের উত্তোলন","Owner withdrawals"], rs_net:["নিট ক্যাশ নড়াচড়া","Net cash movement"],
+  rs_now_r:["মোট বাকি পাওনা (এখন)","Total receivable (now)"], rs_now_p:["মোট দেনা (এখন)","Total payable (now)"],
+  r_date:["তারিখ","Date"], r_sales:["বিক্রি","Sales"], r_recv:["আদায়","Collected"], r_buy:["ক্রয়","Purchases"], r_exp:["খরচ","Expenses"], r_wd:["উত্তোলন","Withdrawals"],
+  r_total:["মোট","Total"], r_cat:["খাত","Category"], r_cnt:["সংখ্যা","Count"], r_note:["নোট","Note"], r_by:["এন্ট্রি করেছেন","Entered by"],
+  rx_cat:["খাত অনুযায়ী মোট","Total by category"], rx_det:["বিস্তারিত","Details"], rec_month:["কোন মাসের","For month"]
 };
 const en = () => P.lang === "en";
 const t = (k, v) => { let s = (T[k] || [k, k])[en() ? 1 : 0]; if (v) for (const x in v) s = s.replace("{" + x + "}", v[x]); return s; };
@@ -173,11 +210,11 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
 const loadingH = () => `<div class="center">${t("loading")}</div>`;
 const contact = c => [c.ownerName, c.phone].filter(Boolean).map(esc).join(" · ");
-const OT = [["sale","৳","tab_sale"],["buy","🛒","tab_buy"],["exp","💸","tab_exp"],["khata","👥","tab_khata"],["set","⚙️","tab_set"]];
+const OT = [["sale","৳","tab_sale"],["buy","🛒","tab_buy"],["exp","💸","tab_exp"],["khata","👥","tab_khata"],["acc","📊","tab_acc"],["set","⚙️","tab_set"]];
 const AT = [["clients","👥","tab_clients"],["set","⚙️","tab_set"]];
 const navHtml = (tabs, cur) => tabs.map(([k, ic, l]) => `<button data-tab="${k}" class="${k === cur ? "on" : ""}"><b>${ic}</b>${t(l)}</button>`).join("");
 const show = (h, nv = "") => {
-  $("#main").innerHTML = h; $("#nav").innerHTML = nv;
+  $("#main").innerHTML = h; $("#nav").innerHTML = nv; renderHd();
   $("#lo")?.addEventListener("click", () => signOut(auth));
   $("#nav").querySelectorAll("[data-tab]").forEach(b => b.onclick = () => go(b.dataset.tab));
 };
@@ -249,10 +286,10 @@ function viewProfile() {
 
 // ================= মালিকের অ্যাপ =================
 const canWrite = () => S.sub && S.sub.status === "active" && Date.now() < S.sub.expiresAt.toMillis() + GRACE_DAYS * 864e5;
-const head = () => `<h1>${esc(S.client.shopName)}</h1><div class="brand">Quick Hisab by FaBi Hub</div>`;
+const head = () => "";
 
 function viewOwner(u) {
-  S = { uid: u.uid, client: undefined, sub: undefined, cust: [], supp: [], rec: [], recPaid: [], tab: "sale", kt: "cust", et: "exp", ledger: null, led: { s: [], r: [] }, drawn: false, registering: S.registering };
+  S = { uid: u.uid, client: undefined, sub: undefined, cust: [], supp: [], rec: [], recPaid: [], tab: "sale", kt: "cust", et: "exp", ledger: null, led: { s: [], r: [] }, drawn: false, days: {}, daysFrom: addDays(todayStr(), -60), cd: null, at: "cash", rt: "sum", rmon: null, rm: null, rl: "", registering: S.registering };
   ALLQ().forEach(e => { e.q.un && e.q.un(); e.q = mkQ(); });
   const col = c => collection(db, "clients", u.uid, c);
   const onErr = e => show(`<div class="card"><div class="msg">${esc(errMsg(e))}</div><button class="btn ghost" id="lo">${t("logout")}</button></div>`);
@@ -261,17 +298,19 @@ function viewOwner(u) {
   unsubs.push(onSnapshot(col("customers"), q => { S.cust = q.docs.map(d => ({ id: d.id, ...d.data() })); S.pc = q.metadata.hasPendingWrites; refresh(); }, onErr));
   unsubs.push(onSnapshot(col("suppliers"), q => { S.supp = q.docs.map(d => ({ id: d.id, ...d.data() })); S.pp = q.metadata.hasPendingWrites; refresh(); }, onErr));
   unsubs.push(onSnapshot(col("recurring"), q => { S.rec = q.docs.map(d => ({ id: d.id, ...d.data() })); refresh(); }, onErr));
+  unsubs.push(onSnapshot(query(col("days"), where(documentId(), ">=", S.daysFrom)), q => { S.days = {}; q.docs.forEach(d => S.days[d.id] = d.data()); refresh(); }, onErr));
   listenRec();
   S.timer = setInterval(() => {
     ALLQ().forEach(e => { if (e.q.un && !e.q.sd && e.q.day !== todayStr()) listen(e.q, e.col, refresh); });
-    if (S.rm !== monthStr()) listenRec(); refresh();
+    if (!S.rm && S.rl !== monthStr()) listenRec(); refresh();
   }, 60000);
   unsubs.push(() => { stopLedger(); S.recUn && S.recUn(); clearInterval(S.timer); ALLQ().forEach(e => e.q.un && e.q.un()); });
 }
 const monthStr = () => todayStr().slice(0, 7);
+const curRm = () => S.rm || monthStr();
 function listenRec() {
-  S.recUn && S.recUn(); S.rm = monthStr();
-  S.recUn = onSnapshot(query(collection(db, "clients", S.uid, "expenses"), where("rm", "==", S.rm)), q => { S.recPaid = q.docs.map(d => ({ id: d.id, ...d.data() })); refresh(); }, fail);
+  S.recUn && S.recUn(); S.rl = curRm();
+  S.recUn = onSnapshot(query(collection(db, "clients", S.uid, "expenses"), where("rm", "==", S.rl)), q => { S.recPaid = q.docs.map(d => ({ id: d.id, ...d.data() })); refresh(); }, fail);
 }
 function gate() {
   if (S.client === undefined || S.sub === undefined) return show(loadingH());
@@ -282,7 +321,7 @@ function go(tab) {
   if (ROLE === "admin") { A.tab = tab; drawAdmin(); return; }
   stopLedger(); S.tab = tab; S.ledger = null; draw();
 }
-function draw() { if (S.ledger) return drawLedger(); ({ sale: () => drawEntry(ENG.sale), buy: () => drawEntry(ENG.buy), exp: drawSimple, khata: drawKhata, set: drawSet })[S.tab](); }
+function draw() { if (S.ledger) return drawLedger(); ({ sale: () => drawEntry(ENG.sale), buy: () => drawEntry(ENG.buy), exp: drawSimple, khata: drawKhata, acc: drawAcc, set: drawSet })[S.tab](); }
 function refresh() {
   if (!S.drawn) return;
   if (S.ledger) { X = S.kt === "supp" ? ENG.buy : ENG.sale; return fillLedger(); }
@@ -290,6 +329,7 @@ function refresh() {
   if (tb === "sale" || tb === "buy") { X = ENG[tb]; fillTop(); fillEntryList(); fillCc(); fillPick(); }
   else if (tb === "exp") { Y = S.et === "wd" ? YS.wd : YS.exp; fillTop(); fillSimpleList(); fillRec(); }
   else if (tb === "khata") { X = S.kt === "supp" ? ENG.buy : ENG.sale; fillTop(); fillPartyList(); }
+  else if (tb === "acc") { fillTop(); if (S.at === "cash") fillCash(); }
   else drawSet();
 }
 function banner() {
@@ -357,8 +397,8 @@ function dayInc(b, date, obj) {
 }
 
 // ================= বিক্রি ও ক্রয় (একই ইঞ্জিন, আলাদা কনফিগ) =================
-const LB_SALE = { lbl: "sell", quick: "quick", pick: "pick_cust", cashL: "cash_got", oldL: "old_pay", curL: "cur_due", last: "last10", cashN: "sale_cash", credL: "sale_credit", need: "need_cust", search: "search_cust", newP: "new_cust", ok: "sale_ok", pos: "will_get", neg: "adv", act: "receive", dos: "do_sale", tdue: "total_due", rsv: "rec_saved", coll: "collected", openL: "opening", none: "none_cust" };
-const LB_BUY = { lbl: "buy", quick: "buy_quick", pick: "pick_sup", cashL: "paid_cash", oldL: "old_sup", curL: "cur_owe", last: "last10b", cashN: "buy_cash", credL: "buy_credit", need: "need_sup", search: "search_sup", newP: "new_sup", ok: "buy_ok", pos: "owe", neg: "sadv", act: "pay_sup", dos: "do_buy", tdue: "tdue_s", rsv: "pay_saved", coll: "paid_l", openL: "opening_s", none: "none_sup" };
+const LB_SALE = { lbl: "sell", quick: "quick", pick: "pick_cust", cashL: "cash_got", oldL: "old_pay", curL: "cur_due", last: "last10", cashN: "sale_cash", credL: "sale_credit", need: "need_cust", search: "search_cust", newP: "new_cust", ok: "sale_ok", pos: "will_get", neg: "adv", act: "receive", dos: "do_sale", tdue: "total_due", rsv: "rec_saved", coll: "collected", openL: "opening", none: "none_cust", tot: "tot_sell", got: "tot_recv", tbal: "tot_bal_c" };
+const LB_BUY = { lbl: "buy", quick: "buy_quick", pick: "pick_sup", cashL: "paid_cash", oldL: "old_sup", curL: "cur_owe", last: "last10b", cashN: "buy_cash", credL: "buy_credit", need: "need_sup", search: "search_sup", newP: "new_sup", ok: "buy_ok", pos: "owe", neg: "sadv", act: "pay_sup", dos: "do_buy", tdue: "tdue_s", rsv: "pay_saved", coll: "paid_l", openL: "opening_s", none: "none_sup", tot: "tot_buy", got: "tot_paid", tbal: "tot_bal_s" };
 const ENG = {
   sale: { k: "sale", tab: "sale", col: "sales", pcol: "customers", rcol: "receipts", pid: "customerId", pn: "customerName", lim: 1, f: { tot: "salesTotal", cash: "cashSales", old: "receipts" }, parts: () => S.cust, L: LB_SALE, q: mkQ() },
   buy: { k: "buy", tab: "buy", col: "purchases", pcol: "suppliers", rcol: "supplierPayments", pid: "supplierId", pn: "supplierName", lim: 0, f: { tot: "purchasesTotal", cash: "cashPurchases", old: "supplierPaid" }, parts: () => S.supp, L: LB_BUY, q: mkQ() }
@@ -374,7 +414,7 @@ function drawEntry(E) {
   <div class="seg"><button id="m1">${t(L.quick)}</button><button id="m2">${t(L.pick)}</button></div>
   <label id="al"></label><input id="am" inputmode="decimal" autocomplete="off" style="font-size:26px;text-align:center">
   <input id="nt" placeholder="📝 ${t("note")}" autocomplete="off" style="margin-top:8px">
-  <div id="cx"></div><div class="msg" id="m"></div><button class="btn" id="sv" style="margin-top:6px">${t("sale_save")}</button></div>${listCard(t(L.last), E.q)}`, navHtml(OT, E.tab));
+  ${dateRow()}<div id="cx"></div><div class="msg" id="m"></div><button class="btn" id="sv" style="margin-top:6px">${t("sale_save")}</button></div>${listCard(t(L.last), E.q)}`, navHtml(OT, E.tab));
   $("#m1").onclick = () => setMode("quick"); $("#m2").onclick = () => setMode("party");
   calcBind($("#am"), prev); $("#sv").onclick = saveEntry;
   if (!E.q.un) listen(E.q, E.col, refresh);
@@ -441,8 +481,9 @@ function saveEntry() {
     if (cash > total) return err(t("cash_gt"));
     cash = r2(cash); old = r2(old);
   }
+  const date = $("#ed").value || todayStr(), em = chkDate(date); if (em) return err(em);
   err("");
-  const due = r2(total - cash), date = todayStr(), uid = S.uid, b = writeBatch(db);
+  const due = r2(total - cash), uid = S.uid, b = writeBatch(db);
   const meta = { createdBy: uid, createdByName: who(), createdAt: serverTimestamp(), status: "active", date };
   const ref = newRef(X.col), doc1 = { ...meta, type: pt ? (X.k === "sale" ? "customer" : "supplier") : "quick", total, cash, due, note: $("#nt").value.trim(), history: [] };
   if (pt) { doc1[X.pid] = pt.id; doc1[X.pn] = pt.name; }
@@ -455,13 +496,14 @@ function saveEntry() {
   dayInc(b, date, { [f.tot]: total, [f.cash]: cash, [f.old]: old });
   b.commit().catch(fail);
   if (pt) { const a = pt.balance, c = r2(a + due - old); toast(old > 0 ? t("ds2", { a: n(a), b: n(due), o: n(old), c: n(c) }) : t("ds1", { a: n(a), b: n(due), c: n(c) }), 6000); }
-  else toast(t(X.L.ok) + " ৳ " + n(total));
-  $("#am").value = ""; $("#nt").value = ""; q.sel = null; fillCx(); $("#am").focus();
+  else toast(t(X.L.ok) + " ৳ " + n(total) + (date !== todayStr() ? " (" + fmtD(date) + ")" : ""));
+  $("#am").value = ""; $("#nt").value = ""; $("#ed").value = todayStr(); q.sel = null; fillCx(); $("#am").focus();
 }
 const fillEntryList = () => fillList(X.q, (x, sn) => entryRow(x, `${t(X.L.lbl)}-${dg(sn)} = ${n(x.total)} (${x[X.pid] ? esc(x[X.pn]) : t(X.L.cashN)})${x.due > 0 ? ` (${t("due")}-${n(x.due)})` : ""}`), editEntry, cancelEntry);
 // এডিট = একই ডকুমেন্টে বদল; ক্যাশ/বাকি/দিনের যোগফল শুধু পার্থক্য ধরে ঠিক হয়
 function editEntry(x, sn) {
   if (!x || x.status !== "active") return;
+  if (locked(x.date)) return toast(t("locked_msg"));
   const isP = !!x[X.pid], old = x.oldCollected || 0, no = sn && sn[x.id], E = X, f = E.f;
   const o = sheet(`<b>${t("edit")} — ${t(E.L.lbl)}${no ? "-" + dg(no) : ""}</b>${isP ? `<div class="tag">${esc(x[E.pn])}</div>` : ""}
   <label>${t("total")}</label><input id="e1" inputmode="decimal" value="${x.total}">
@@ -487,6 +529,7 @@ function editEntry(x, sn) {
 function cancelEntry(x) {
   if (!x || x.status !== "active" || !confirm(t("confirm_cancel"))) return;
   if (!canWrite()) return toast(t("e_perm"));
+  if (locked(x.date)) return toast(t("locked_msg"));
   const uid = S.uid, b = writeBatch(db), old = x.oldCollected || 0, f = X.f;
   const by = { status: "cancelled", cancelledAt: serverTimestamp(), cancelledBy: uid, cancelledByName: who() };
   b.update(cref(X.col, x.id), { ...by, history: arrayUnion({ at: Date.now(), by: uid, n: who(), a: "cancel" }) });
@@ -498,6 +541,7 @@ function cancelEntry(x) {
 function cancelRcpt(r) {
   if (!r || r.status !== "active" || !confirm(t("confirm_cancel"))) return;
   if (!canWrite()) return toast(t("e_perm"));
+  if (locked(r.date)) return toast(t("locked_msg"));
   const b = writeBatch(db);
   b.update(cref(X.rcol, r.id), { status: "cancelled", cancelledAt: serverTimestamp(), cancelledBy: S.uid, cancelledByName: who() });
   b.update(cref(X.pcol, r[X.pid]), { balance: increment(r.amount) });
@@ -532,8 +576,10 @@ function partySheet(c, onDone) {
   <div class="msg" id="cm"></div><button class="btn" id="cs3">${t("save")}</button>`);
   const q = s2 => o.querySelector(s2); q("#cn").focus();
   q("#cs3").onclick = () => {
-    const name = q("#cn").value.trim(), phone = q("#cp").value.trim(), lv = q("#cl3") ? q("#cl3").value.trim() : "", ov = q("#co") ? q("#co").value.trim() : "";
+    const name = q("#cn").value.trim().replace(/\s+/g, " "), phone = q("#cp").value.trim(), lv = q("#cl3") ? q("#cl3").value.trim() : "", ov = q("#co") ? q("#co").value.trim() : "";
     if (!name) return q("#cm").textContent = t("bad_name");
+    const nk = z => z.trim().replace(/\s+/g, " ").toLowerCase();
+    if (E.parts().some(x => x.id !== (c && c.id) && nk(x.name) === nk(name))) return q("#cm").textContent = t("dup_name");
     const lim = lv ? calc(lv) : 0, op = ov ? calc(ov) : 0;
     if (isNaN(lim) || isNaN(op) || lim < 0 || op < 0) return q("#cm").textContent = t("bad_amt");
     if (!canWrite()) return q("#cm").textContent = t("e_perm");
@@ -550,7 +596,8 @@ function settleSheet(c) {
   q("#rs").onclick = () => {
     const a = r2(calc(q("#ra").value)); if (!(a > 0)) return q("#rm").textContent = t("bad_amt");
     if (!canWrite()) return q("#rm").textContent = t("e_perm");
-    const date = todayStr(), b = writeBatch(db);
+    const date = todayStr(); if (locked(date)) return q("#rm").textContent = t("locked_msg");
+    const b = writeBatch(db);
     b.set(newRef(E.rcol), { [E.pid]: c.id, [E.pn]: c.name, amount: a, date, status: "active", createdBy: S.uid, createdByName: who(), createdAt: serverTimestamp() });
     b.update(cref(E.pcol, c.id), { balance: increment(-a), lastTxnDate: date });
     dayInc(b, date, { [E.f.old]: a });
@@ -562,7 +609,7 @@ function drawLedger() {
   const E = S.kt === "supp" ? ENG.buy : ENG.sale; X = E; const L = E.L;
   const c = E.parts().find(x => x.id === S.ledger); if (!c) { S.ledger = null; return draw(); }
   show(`<button class="link" id="bk" style="text-align:left;width:auto;padding:0 0 10px">← ${t("back")}</button>
-  <div class="card"><h1>${esc(c.name)}</h1><div class="tag">${esc(c.phone || "")}</div><div class="big" id="lb"></div><div class="tag" id="li" style="text-align:center;margin-bottom:10px"></div>
+  <div class="card"><h1>${esc(c.name)}</h1><div class="tag">${esc(c.phone || "")}</div><div id="l3" class="g3"></div><div class="tag" id="li" style="text-align:center;margin-bottom:10px"></div>
   <div style="display:flex;gap:8px"><button class="btn sm" style="flex:1;margin:0" id="lr">${t(L.act)}</button><button class="btn ghost sm" style="flex:1;margin:0" id="ls">${t(L.dos)}</button></div>
   <div style="display:flex;gap:8px;margin-top:8px"><button class="btn ghost sm" style="flex:1;margin:0" id="le">${t("edit")}</button><button class="btn ghost sm" style="flex:1;margin:0" id="lv">${t("reconcile")}</button></div></div>
   <div class="card" id="lt"></div>`, navHtml(OT, "khata"));
@@ -578,9 +625,12 @@ function drawLedger() {
   fillLedger();
 }
 function fillLedger() {
-  const E = X, L = E.L, c = E.parts().find(x => x.id === S.ledger); if (!c || !$("#lb")) return;
-  $("#lb").innerHTML = `<span class="${c.balance > 0 ? "neg" : "pos"}">৳ ${n(Math.abs(c.balance))}</span><div class="tag">${c.balance > 0 ? t(L.pos) : c.balance < 0 ? t(L.neg) : ""}</div>`;
-  $("#li").textContent = [c.lastTxnDate ? t("last_txn") + ": " + fmtD(c.lastTxnDate) : "", E.lim && c.creditLimit > 0 ? t("limit") + ": ৳ " + n(c.creditLimit) : ""].filter(Boolean).join(" · ");
+  const E = X, L = E.L, c = E.parts().find(x => x.id === S.ledger); if (!c || !$("#l3")) return;
+  const as = S.led.s.filter(x => x.status === "active"), ar = S.led.r.filter(x => x.status === "active");
+  const tot = r2(as.reduce((a, x) => a + x.total, 0)), got = r2(as.reduce((a, x) => a + x.cash, 0) + ar.reduce((a, x) => a + x.amount, 0));
+  $("#l3").innerHTML = `<div class="bx"><small>${t(L.tot)}</small><b>৳ ${n(tot)}</b></div><div class="bx"><small>${t(L.got)}</small><b class="pos">৳ ${n(got)}</b></div>
+  <div class="bx"><small>${t(L.tbal)}</small><b class="${c.balance > 0 ? "neg" : "pos"}">৳ ${n(Math.abs(c.balance))}</b><small>${c.balance > 0 ? t(L.pos) : c.balance < 0 ? t(L.neg) : ""}</small></div>`;
+  $("#li").textContent = [c.lastTxnDate ? t("last_txn") + ": " + fmtD(c.lastTxnDate) : "", c.opening > 0 ? t("open_l") + ": ৳ " + n(c.opening) : "", E.lim && c.creditLimit > 0 ? t("limit") + ": ৳ " + n(c.creditLimit) : ""].filter(Boolean).join(" · ");
   const rows = [...S.led.s.map(x => ({ k: "s", x })), ...S.led.r.map(x => ({ k: "r", x }))].sort((a, b) => b.x.date.localeCompare(a.x.date) || ms(b.x) - ms(a.x));
   $("#lt").innerHTML = rows.length ? rows.map(({ k, x }) => {
     const dead = x.status === "cancelled", canC = !dead && !(k === "r" && x.fromSaleId);
@@ -609,27 +659,28 @@ function drawSimple() {
   show(`<div id="bn"></div><div class="card"><div class="seg" style="margin:0 0 8px"><button data-et="exp" class="${isE ? "on" : ""}">${t("exp_l")}</button><button data-et="wd" class="${!isE ? "on" : ""}">${t("wd_l")}</button></div>
   <label>${t("amount")}</label><input id="am" inputmode="decimal" autocomplete="off" style="font-size:26px;text-align:center">
   ${isE ? `<input id="ec" list="cats" placeholder="${t("cat")}" autocomplete="off" style="margin-top:8px"><datalist id="cats">${cats().map(c => `<option value="${esc(c)}">`).join("")}</datalist>` : ""}
-  <input id="nt" placeholder="📝 ${t("note")}" autocomplete="off" style="margin-top:8px"><div class="msg" id="m"></div><button class="btn" id="sv" style="margin-top:6px">${t("sale_save")}</button></div>
+  <input id="nt" placeholder="📝 ${t("note")}" autocomplete="off" style="margin-top:8px">${dateRow()}<div class="msg" id="m"></div><button class="btn" id="sv" style="margin-top:6px">${t("sale_save")}</button></div>
   ${isE ? `<div class="card" id="rc"></div>` : ""}${listCard(t(isE ? "exp_last" : "wd_last"), Y.q)}`, navHtml(OT, "exp"));
   document.querySelectorAll("[data-et]").forEach(b => b.onclick = () => { S.et = b.dataset.et; drawSimple(); });
   calcBind($("#am")); $("#sv").onclick = saveSimple;
   if (!Y.q.un) listen(Y.q, Y.col, refresh);
-  if (S.rm !== monthStr()) listenRec();
+  if (S.rl !== curRm()) listenRec();
   bindDate(Y.q, Y.col); fillSimpleList(); fillRec(); fillTop();
 }
-const fillSimpleList = () => fillList(Y.q, (x, sn) => entryRow(x, Y.k === "exp" ? `${t("exp_l")}-${dg(sn)} = ${n(x.amount)} (${esc(x.category)})` : `${t("wd_l")}-${dg(sn)} = ${n(x.amount)}`), editSimple, cancelSimple);
+const fillSimpleList = () => fillList(Y.q, (x, sn) => entryRow(x, Y.k === "exp" ? `${t("exp_l")}-${dg(sn)} = ${n(x.amount)} (${esc(x.category)}${x.rm ? " · " + x.rm : ""})` : `${t("wd_l")}-${dg(sn)} = ${n(x.amount)}`), editSimple, cancelSimple);
 function saveSimple() {
   const err = m => { $("#m").textContent = m; };
   if (!canWrite()) return err(t("e_perm"));
   const amount = r2(calc($("#am").value)); if (!(amount > 0)) return err(t("bad_amt"));
-  const d = { date: todayStr(), amount, note: $("#nt").value.trim(), status: "active", createdBy: S.uid, createdByName: who(), createdAt: serverTimestamp(), history: [] };
+  const edt = $("#ed").value || todayStr(), em = chkDate(edt); if (em) return err(em);
+  const d = { date: edt, amount, note: $("#nt").value.trim(), status: "active", createdBy: S.uid, createdByName: who(), createdAt: serverTimestamp(), history: [] };
   if (Y.k === "exp") d.category = $("#ec").value.trim() || t("cat_other");
   const b = writeBatch(db); b.set(newRef(Y.col), d); dayInc(b, d.date, { [Y.f]: amount }); b.commit().catch(fail);
   err(""); toast(t(Y.k === "exp" ? "exp_ok" : "wd_ok") + " ৳ " + n(amount));
-  $("#am").value = ""; $("#nt").value = ""; if ($("#ec")) $("#ec").value = ""; $("#am").focus();
+  $("#am").value = ""; $("#nt").value = ""; if ($("#ec")) $("#ec").value = ""; $("#ed").value = todayStr(); $("#am").focus();
 }
 function editSimple(x) {
-  if (!x || x.status !== "active") return; const isE = Y.k === "exp", E = Y;
+  if (!x || x.status !== "active") return; if (locked(x.date)) return toast(t("locked_msg")); const isE = Y.k === "exp", E = Y;
   const o = sheet(`<b>${t("edit")} — ${t(isE ? "exp_l" : "wd_l")}</b><label>${t("amount")}</label><input id="e1" inputmode="decimal" value="${x.amount}">
   ${isE ? `<label>${t("cat")}</label><input id="e4" value="${esc(x.category)}">` : ""}<label>${t("note")}</label><input id="e3" value="${esc(x.note || "")}">
   <div class="msg" id="em2"></div><button class="btn" id="es" style="margin-top:6px">${t("save")}</button>`);
@@ -647,6 +698,7 @@ function editSimple(x) {
 function cancelSimple(x) {
   if (!x || x.status !== "active" || !confirm(t("confirm_cancel"))) return;
   if (!canWrite()) return toast(t("e_perm"));
+  if (locked(x.date)) return toast(t("locked_msg"));
   const uid = S.uid, b = writeBatch(db);
   b.update(cref(Y.col, x.id), { status: "cancelled", cancelledAt: serverTimestamp(), cancelledBy: uid, cancelledByName: who(), history: arrayUnion({ at: Date.now(), by: uid, n: who(), a: "cancel" }) });
   dayInc(b, x.date, { [Y.f]: -x.amount }); b.commit().catch(fail);
@@ -655,17 +707,19 @@ function cancelSimple(x) {
 function fillRec() {
   const e = $("#rc"); if (!e) return;
   const rs = S.rec.filter(r => r.active !== false), paid = r => S.recPaid.some(x => x.recurringId === r.id && x.status === "active");
-  e.innerHTML = `<div class="row" style="padding-top:0"><b>${t("rec_t")}</b><button class="ib" id="ra">${t("rec_add")}</button></div>` +
+  e.innerHTML = `<div class="row" style="padding-top:0"><b>${t("rec_t")}</b><span><input type="month" id="rmn" value="${curRm()}" title="${t("rec_month")}" style="width:auto;padding:4px 6px;font-size:13px"><button class="ib" id="ra">${t("rec_add")}</button></span></div>` +
     (rs.length ? rs.map(r => `<div class="row"><div><b>${esc(r.title)}</b> <span class="tag">৳ ${n(r.amount)}</span></div><div style="white-space:nowrap">${paid(r) ? `<span class="badge b-ok">${t("rec_paid")}</span>` : `<button class="ib" data-p="${r.id}">${t("rec_pay")}</button>`}<button class="ib" data-r="${r.id}">✎</button></div></div>`).join("") : `<div class="tag">${t("rec_none")}</div>`);
   $("#ra").onclick = () => recSheet(null);
+  $("#rmn").onchange = e => { const v = e.target.value; S.rm = (!v || v === monthStr()) ? null : v; listenRec(); fillRec(); };
   e.querySelectorAll("[data-p]").forEach(b => b.onclick = () => payRec(S.rec.find(r => r.id === b.dataset.p)));
   e.querySelectorAll("[data-r]").forEach(b => b.onclick = () => recSheet(S.rec.find(r => r.id === b.dataset.r)));
 }
 function payRec(r) {
   if (!canWrite()) return toast(t("e_perm"));
-  const b = writeBatch(db), date = todayStr(), amount = r2(r.amount);
-  b.set(newRef("expenses"), { date, amount, category: r.title, note: "", recurringId: r.id, rm: monthStr(), status: "active", createdBy: S.uid, createdByName: who(), createdAt: serverTimestamp(), history: [] });
-  dayInc(b, date, { expenses: amount }); b.commit().catch(fail); toast(t("exp_ok") + " ৳ " + n(amount));
+  const date = todayStr(), amount = r2(r.amount); if (locked(date)) return toast(t("locked_msg"));
+  const b = writeBatch(db);
+  b.set(newRef("expenses"), { date, amount, category: r.title, note: "", recurringId: r.id, rm: curRm(), status: "active", createdBy: S.uid, createdByName: who(), createdAt: serverTimestamp(), history: [] });
+  dayInc(b, date, { expenses: amount }); b.commit().catch(fail); toast(t("exp_ok") + " ৳ " + n(amount) + " · " + curRm());
 }
 function recSheet(r) {
   const o = sheet(`<b>${t("rec_t")}</b><label>${t("rec_title")}</label><input id="r1" value="${esc(r?.title)}"><label>${t("amount")}</label><input id="r2" inputmode="decimal" value="${r ? r.amount : ""}">
@@ -678,6 +732,188 @@ function recSheet(r) {
     closeSheet();
   };
   if (r) q("#rx").onclick = () => { updateDoc(cref("recurring", r.id), { active: false }).catch(fail); closeSheet(); };
+}
+
+// ================= হেডার (তারিখ ও সময়) =================
+const WD = [["রবিবার", "Sunday"], ["সোমবার", "Monday"], ["মঙ্গলবার", "Tuesday"], ["বুধবার", "Wednesday"], ["বৃহস্পতিবার", "Thursday"], ["শুক্রবার", "Friday"], ["শনিবার", "Saturday"]];
+const MN = [["জানুয়ারি", "Jan"], ["ফেব্রুয়ারি", "Feb"], ["মার্চ", "Mar"], ["এপ্রিল", "Apr"], ["মে", "May"], ["জুন", "Jun"], ["জুলাই", "Jul"], ["আগস্ট", "Aug"], ["সেপ্টেম্বর", "Sep"], ["অক্টোবর", "Oct"], ["নভেম্বর", "Nov"], ["ডিসেম্বর", "Dec"]];
+const BM = [["বৈশাখ", "Boishakh"], ["জ্যৈষ্ঠ", "Joishtho"], ["আষাঢ়", "Asharh"], ["শ্রাবণ", "Srabon"], ["ভাদ্র", "Bhadro"], ["আশ্বিন", "Ashwin"], ["কার্তিক", "Kartik"], ["অগ্রহায়ণ", "Ogrohayon"], ["পৌষ", "Poush"], ["মাঘ", "Magh"], ["ফাল্গুন", "Falgun"], ["চৈত্র", "Choitro"]];
+const BSTART = [[3, 14], [4, 15], [5, 15], [6, 16], [7, 16], [8, 16], [9, 16], [10, 15], [11, 15], [0, 14], [1, 13], [2, 15]]; // বাংলাদেশের সংশোধিত বঙ্গাব্দ: [গ্রেগরিয়ান মাস (০=জানু), শুরুর তারিখ]
+function bnDate(d) {
+  const y = d.getFullYear(), t0 = new Date(y, d.getMonth(), d.getDate()).getTime(); let best = null;
+  for (const yy of [y - 1, y]) BSTART.forEach(([m, dd], i) => { const st = new Date(yy, m, dd).getTime(); if (st <= t0 && (!best || st > best.st)) best = { st, i }; });
+  return { d: Math.round((t0 - best.st) / 864e5) + 1, m: best.i, y: t0 >= new Date(y, 3, 14).getTime() ? y - 593 : y - 594 };
+}
+function renderHd() {
+  const h = $("#hd"), on = ROLE && (ROLE === "admin" || S.client);
+  document.body.classList.toggle("hd", !!on);
+  if (!on) { h.innerHTML = ""; return; }
+  h.innerHTML = `<div class="d"><span id="hdd"></span><span class="t" id="hdt"></span></div><div class="s">${ROLE === "admin" ? "Admin" : esc(S.client.shopName)}</div><div class="b">Quick Hisab by FaBi Hub</div>`;
+  tickClock();
+}
+function tickClock() {
+  const e = $("#hdt"); if (!e) return;
+  const d = new Date(), i = en() ? 1 : 0, p2 = x => String(x).padStart(2, "0"); let h = d.getHours(), ap = "";
+  if (P.h12 === "1") { ap = h >= 12 ? " PM" : " AM"; h = h % 12 || 12; }
+  e.textContent = dg(p2(h) + ":" + p2(d.getMinutes()) + (P.sec === "1" ? ":" + p2(d.getSeconds()) : "")) + ap;
+  const b = bnDate(d);
+  $("#hdd").textContent = [WD[d.getDay()][i], dg(p2(d.getDate())) + "-" + MN[d.getMonth()][i] + "-" + dg(d.getFullYear()), P.bd === "1" ? dg(b.d) + "-" + BM[b.m][i] + "-" + dg(b.y) : null].filter(Boolean).join(" │ ");
+}
+setInterval(tickClock, 1000);
+const hdrVal = () => [P.h12 === "1" ? "12H" : "24H", P.sec === "1" ? t("hdr_sec_s") : "", P.bd === "1" ? t("hdr_bd_s") : ""].filter(Boolean).join(" · ");
+function hdrSheet() {
+  const row = (k, lbl, a, b) => `<label>${lbl}</label><div class="seg">${[["1", a], ["0", b]].map(([v, l]) => `<button data-k="${k}" data-v="${v}" class="${P[k] === v ? "on" : ""}">${l}</button>`).join("")}</div>`;
+  const o = sheet(`<b>${t("hdr_t")}</b>${row("h12", t("hdr_fmt"), "12 H", "24 H")}${row("sec", t("hdr_sec"), t("show"), t("hide"))}${row("bd", t("hdr_bd"), t("show"), t("hide"))}`);
+  o.querySelectorAll("[data-k]").forEach(b => b.onclick = () => { P[b.dataset.k] = b.dataset.v; LS.s(b.dataset.k, b.dataset.v); closeSheet(); tickClock(); rerender(); });
+}
+
+// ================= তারিখ, দিন বন্ধ ও ক্যাশ হিসাব =================
+function addDays(str, k) { const [y, m, d] = str.split("-"); return dstr(new Date(+y, +m - 1, +d + k)); }
+const locked = d => d < S.daysFrom || !!(S.days[d] && S.days[d].closed);
+const chkDate = d => (d > todayStr() || d < addDays(todayStr(), -7)) ? t("bad_edate") : locked(d) ? t("locked_msg") : "";
+const dateRow = () => `<div class="row" style="padding:4px 0;border:0"><span class="tag">${t("edate")}</span><input type="date" id="ed" value="${todayStr()}" min="${addDays(todayStr(), -7)}" max="${todayStr()}" style="width:auto;padding:6px 8px"></div>`;
+const dayNet = d => r2((d.cashSales || 0) + (d.receipts || 0) - (d.cashPurchases || 0) - (d.supplierPaid || 0) - (d.expenses || 0) - (d.withdrawals || 0));
+// সকালের ক্যাশ: ওই দিনে সেট করা থাকলে সেটা, না হলে আগের দিনগুলোর নিট যোগ করে
+function openingOf(date) {
+  let k = date, sum = 0;
+  for (let i = 0; i < 60; i++) {
+    const d = S.days[k]; if (d && d.openingCash !== undefined) return r2(d.openingCash + sum);
+    k = addDays(k, -1); sum += dayNet(S.days[k] || {});
+  }
+  return r2(sum);
+}
+const cd = () => S.cd || todayStr();
+function drawAcc() {
+  show(`<div id="bn"></div><div class="card"><div class="seg" style="margin:0"><button data-at="cash" class="${S.at === "cash" ? "on" : ""}">${t("cash_t")}</button><button data-at="rep" class="${S.at === "rep" ? "on" : ""}">${t("rep_t")}</button></div></div><div id="ac2"></div>`, navHtml(OT, "acc"));
+  document.querySelectorAll("[data-at]").forEach(b => b.onclick = () => { S.at = b.dataset.at; drawAcc(); });
+  fillTop(); S.at === "cash" ? drawCash() : drawRep();
+}
+function drawCash() {
+  $("#ac2").innerHTML = `<div class="card"><input type="date" id="cd" value="${cd()}" max="${todayStr()}" style="margin-bottom:8px"><div id="cb"></div></div>`;
+  $("#cd").onchange = e => { const v = e.target.value; S.cd = (!v || v === todayStr()) ? null : v; e.target.value = cd(); fillCash(); };
+  fillCash();
+}
+function fillCash() {
+  const e = $("#cb"); if (!e) return;
+  const a = document.activeElement, foc = a && a.id === "cc2", keep = $("#cc2") ? $("#cc2").value : "";
+  const D = cd(), d = S.days[D] || {}, op = openingOf(D), exp = r2(op + dayNet(d)), closed = !!d.closed, R = (l, v, k) => srow(l, "৳ " + n(v), k);
+  e.innerHTML = R(t("c_open"), op, closed ? "" : "op") + R("+ " + t("c_cs"), d.cashSales || 0) + R("+ " + t("c_rc"), d.receipts || 0) + R("− " + t("c_cp"), d.cashPurchases || 0) +
+    R("− " + t("c_sp"), d.supplierPaid || 0) + R("− " + t("c_ex"), d.expenses || 0) + R("− " + t("c_wd"), d.withdrawals || 0) +
+    `<div class="row" style="border-top:1px solid var(--line)"><b>${t("c_exp")}</b><b style="font-size:20px">৳ ${n(exp)}</b></div>
+    <div class="tag">${t("c_stot")}: ৳ ${n(d.salesTotal || 0)} · ${t("c_ptot")}: ৳ ${n(d.purchasesTotal || 0)}</div>` +
+    (closed ? `<div class="row"><span class="badge b-ok">✔ ${t("closed_l")}</span><span class="tag">${esc(d.closedByName || "")}</span></div>${srow(t("c_count"), "৳ " + n(d.countedCash))}${srow(t("c_diff"), (d.diff > 0 ? "+" : "") + n(d.diff))}<button class="btn ghost" id="rop">${t("reopen")}</button>`
+      : `<label>${t("c_count")}</label><input id="cc2" inputmode="decimal" autocomplete="off"><div class="row" id="cdf" style="border:0"></div><button class="btn" id="cls">${t("close_btn")}</button>`);
+  const upd = () => { const v = calc($("#cc2").value), f = $("#cdf"); f.innerHTML = isNaN(v) ? "" : `<span>${t("c_diff")}</span><b class="${r2(v - exp) < 0 ? "neg" : r2(v - exp) > 0 ? "pos" : ""}">${r2(v - exp) > 0 ? "+" : ""}${n(r2(v - exp))}</b>`; };
+  if ($("#cc2")) { calcBind($("#cc2"), upd); $("#cc2").value = keep; if (foc) $("#cc2").focus(); upd(); $("#cls").onclick = closeDay; }
+  if ($("#rop")) $("#rop").onclick = reopenDay;
+  const eo = e.querySelector('[data-ed="op"]');
+  if (eo) eo.onclick = () => fieldSheet(t("c_open"), op, v => {
+    const x = calc(v); if (isNaN(x) || x < 0) return t("bad_amt"); if (locked(D)) return t("locked_msg"); if (!canWrite()) return t("e_perm");
+    setDoc(cref("days", D), { openingCash: r2(x) }, { merge: true }).catch(fail);
+  }, "decimal");
+}
+function closeDay() {
+  const D = cd(), v = calc($("#cc2").value); if (isNaN(v) || v < 0) return toast(t("bad_amt"));
+  if (!canWrite()) return toast(t("e_perm"));
+  if (Object.keys(S.days).some(k => k > D && S.days[k].closed)) return toast(t("close_order"));
+  const d = S.days[D] || {}, op = openingOf(D), exp = r2(op + dayNet(d)), cnt = r2(v), diff = r2(cnt - exp);
+  if (!confirm(diff ? t("close_diff", { x: n(diff) }) : t("close_ask", { d: fmtD(D) }))) return;
+  const b = writeBatch(db);
+  b.set(cref("days", D), { closed: true, openingCash: op, expectedCash: exp, countedCash: cnt, diff, closedAt: serverTimestamp(), closedBy: S.uid, closedByName: who() }, { merge: true });
+  b.set(cref("days", addDays(D, 1)), { openingCash: cnt }, { merge: true });
+  b.commit().catch(fail);
+}
+async function reopenDay() {
+  const D = cd();
+  if (Object.keys(S.days).some(k => k > D && S.days[k].closed)) return toast(t("reopen_order"));
+  if (!(await askPassword())) return;
+  const b = writeBatch(db);
+  b.set(cref("days", D), { closed: false, reopenedAt: serverTimestamp(), reopenedBy: S.uid }, { merge: true });
+  b.set(cref("days", addDays(D, 1)), { openingCash: deleteField() }, { merge: true });
+  b.commit().catch(fail);
+}
+
+// ================= রিপোর্ট (স্ক্রিন, PDF, Excel/CSV) =================
+const mLabel = M => { const [y, m] = M.split("-"); return MN[+m - 1][en() ? 1 : 0] + " " + dg(y); };
+function drawRep() {
+  const M = S.rmon || monthStr();
+  $("#ac2").innerHTML = `<div class="card"><div class="seg" style="margin:0 0 8px"><button data-rt="sum" class="${S.rt === "sum" ? "on" : ""}">${t("rep_sum")}</button><button data-rt="exp" class="${S.rt === "exp" ? "on" : ""}">${t("rep_exp")}</button></div>
+  <div style="display:flex;gap:6px;align-items:center"><input type="month" id="rm3" value="${M}" max="${monthStr()}" style="flex:1"><button class="btn sm" id="pdf" style="width:auto;margin:0;padding:0 14px">PDF</button><button class="btn ghost sm" id="csv" style="width:auto;margin:0;padding:0 14px">Excel</button></div></div><div class="card" id="rp"></div>`;
+  document.querySelectorAll("[data-rt]").forEach(b => b.onclick = () => { S.rt = b.dataset.rt; drawRep(); });
+  $("#rm3").onchange = e => { S.rmon = e.target.value && e.target.value !== monthStr() ? e.target.value : null; loadReport(); };
+  $("#csv").onclick = () => S.R && csvReport(S.R);
+  $("#pdf").onclick = () => { if (!S.R) return; toast(t("rep_make"), 8000); pdfReport(S.R).catch(fail); };
+  loadReport();
+}
+async function fetchDays(M) {
+  const q = query(collection(db, "clients", S.uid, "days"), where(documentId(), ">=", M + "-01"), where(documentId(), "<=", M + "-31"));
+  return (await getDocs(q)).docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => a.id.localeCompare(b.id));
+}
+// খরচ কোন মাসের: বাঁধা খরচে বেছে নেওয়া মাস (rm), নইলে এন্ট্রির তারিখের মাস
+async function fetchExp(M) {
+  const col = collection(db, "clients", S.uid, "expenses"), m = new Map();
+  const [a, b] = await Promise.all([getDocs(query(col, where("rm", "==", M))), getDocs(query(col, where("date", ">=", M + "-01"), where("date", "<=", M + "-31")))]);
+  a.docs.forEach(d => m.set(d.id, { id: d.id, ...d.data() }));
+  b.docs.forEach(d => { const x = d.data(); if (x.rm === undefined) m.set(d.id, { id: d.id, ...x }); });
+  return [...m.values()].filter(x => x.status === "active");
+}
+function buildSum(M, days) {
+  const sm = k => r2(days.reduce((a, d) => a + (d[k] || 0), 0));
+  const sales = sm("salesTotal"), cs = sm("cashSales"), rc = sm("receipts"), pur = sm("purchasesTotal"), cp = sm("cashPurchases"), sp = sm("supplierPaid"), ex = sm("expenses"), wd = sm("withdrawals");
+  const recv = r2(S.cust.reduce((a, c) => a + (c.balance > 0 ? c.balance : 0), 0)), pay = r2(S.supp.reduce((a, c) => a + (c.balance > 0 ? c.balance : 0), 0));
+  const rows = days.filter(d => d.salesTotal || d.receipts || d.purchasesTotal || d.expenses || d.withdrawals).map(d => [fmtD(d.id), d.salesTotal || 0, d.receipts || 0, d.purchasesTotal || 0, d.expenses || 0, d.withdrawals || 0]);
+  return { file: "summary-" + M, title: t("rep_sum") + " — " + mLabel(M), blocks: [
+    { head: t("rs_head"), cols: [t("r_item"), t("r_amt")], rows: [[t("rs_sales"), sales], [t("rs_cashs"), cs], [t("rs_credits"), r2(sales - cs)], [t("rs_recv"), rc], [t("rs_buy"), pur], [t("rs_cashb"), cp], [t("rs_credb"), r2(pur - cp)], [t("rs_paid"), sp], [t("rs_exp"), ex], [t("rs_wd"), wd], [t("rs_net"), r2(cs + rc - cp - sp - ex - wd)], [t("rs_now_r"), recv], [t("rs_now_p"), pay]] },
+    { head: t("rs_daily"), cols: [t("r_date"), t("r_sales"), t("r_recv"), t("r_buy"), t("r_exp"), t("r_wd")], rows, foot: [t("r_total"), sales, rc, pur, ex, wd] }] };
+}
+function buildExp(M, items) {
+  const g = {}; items.forEach(x => { const k = x.category || t("cat_other"); (g[k] = g[k] || []).push(x); });
+  const cats = Object.entries(g).map(([k, v]) => [k, v.length, r2(v.reduce((a, x) => a + x.amount, 0))]).sort((a, b) => b[2] - a[2]);
+  const det = [...items].sort((a, b) => (a.category || "").localeCompare(b.category || "", "bn") || a.date.localeCompare(b.date));
+  return { file: "expense-" + M, title: t("rep_exp") + " — " + mLabel(M), blocks: [
+    { head: t("rx_cat"), cols: [t("r_cat"), t("r_cnt"), t("r_total")], rows: cats, foot: [t("r_total"), items.length, r2(items.reduce((a, x) => a + x.amount, 0))] },
+    { head: t("rx_det"), cols: [t("r_cat"), t("r_date"), t("r_amt"), t("r_note"), t("r_by")], rows: det.map(x => [x.category || t("cat_other"), fmtD(x.date) + (x.rm ? " (" + x.rm + ")" : ""), x.amount, x.note || "", x.createdByName || ""]) }] };
+}
+const cell = v => typeof v === "number" ? `<td class="n">${n(v)}</td>` : `<td>${esc(v)}</td>`;
+const reportHtml = R => `<div class="rep"><h3>${esc(R.title)}</h3><div class="tag">${esc(S.client.shopName)}</div>` + R.blocks.map(b =>
+  `<h4>${esc(b.head)}</h4><div style="overflow-x:auto"><table class="rt"><tr>${b.cols.map(c => `<th>${esc(c)}</th>`).join("")}</tr>${b.rows.map(r => `<tr>${r.map(cell).join("")}</tr>`).join("")}${b.foot ? `<tr class="ft">${b.foot.map(cell).join("")}</tr>` : ""}</table></div>`).join("") + `</div>`;
+async function loadReport() {
+  const box = $("#rp"); if (!box) return; box.innerHTML = `<div class="tag">${t("loading")}</div>`;
+  const M = S.rmon || monthStr(), my = S.rt;
+  try {
+    const R = my === "exp" ? buildExp(M, await fetchExp(M)) : buildSum(M, await fetchDays(M));
+    if (!$("#rp") || my !== S.rt) return; S.R = R; box.innerHTML = reportHtml(R);
+  } catch (e) { box.innerHTML = `<div class="msg">${esc(errMsg(e))}</div>`; }
+}
+function csvReport(R) {
+  const q = v => `"${String(v ?? "").replace(/"/g, '""')}"`, lines = [q(R.title)];
+  R.blocks.forEach(b => lines.push("", q(b.head), b.cols.map(q).join(","), ...b.rows.map(r => r.map(q).join(",")), ...(b.foot ? [b.foot.map(q).join(",")] : [])));
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob(["\ufeff" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" })); a.download = R.file + ".csv";
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+}
+const loadJs = src => new Promise((ok, no) => { if (document.querySelector(`script[src="${src}"]`)) return ok(); const x = document.createElement("script"); x.src = src; x.onload = ok; x.onerror = () => no(new Error("script")); document.head.appendChild(x); });
+// ছবি-ভিত্তিক PDF (ব্রাউজার নিজে বাংলা আঁকে), সারির সীমানায় পেজ ভাঙে
+async function pdfReport(R) {
+  await loadJs("https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js");
+  await loadJs("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js");
+  if (document.fonts && document.fonts.ready) await document.fonts.ready;
+  const box = document.createElement("div");
+  box.style.cssText = "position:fixed;left:-9999px;top:0;width:720px;background:#fff;color:#000;padding:24px;font-family:'Hind Siliguri',sans-serif";
+  box.innerHTML = reportHtml(R); document.body.appendChild(box);
+  const top = box.getBoundingClientRect().top, br = [...box.querySelectorAll("tr, h3, h4")].map(z => (z.getBoundingClientRect().bottom - top) * 2);
+  const cv = await window.html2canvas(box, { scale: 2, backgroundColor: "#fff" }); box.remove();
+  const pdf = new window.jspdf.jsPDF("p", "pt", "a4"), W = pdf.internal.pageSize.getWidth(), pageH = pdf.internal.pageSize.getHeight() * cv.width / W;
+  let off = 0, first = true;
+  while (off < cv.height - 1) {
+    let end = Math.min(off + pageH, cv.height);
+    if (end < cv.height) { const c = br.filter(v => v > off + pageH * .5 && v <= end); if (c.length) end = Math.max(...c); }
+    const part = document.createElement("canvas"); part.width = cv.width; part.height = Math.round(end - off);
+    part.getContext("2d").drawImage(cv, 0, off, cv.width, part.height, 0, 0, cv.width, part.height);
+    if (!first) pdf.addPage(); first = false;
+    pdf.addImage(part.toDataURL("image/jpeg", .92), "JPEG", 0, 0, W, part.height * W / cv.width); off = end;
+  }
+  pdf.save(R.file + ".pdf");
 }
 
 // ---------- সেটিংস (সংক্ষিপ্ত সারি, এডিট চাপলে তবেই খোলে) ----------
@@ -710,12 +946,13 @@ function pwSheet() {
     catch (e) { q("#pm2").textContent = errMsg(e); }
   };
 }
-const commonRows = () => srow(t("lang"), P.lang === "en" ? "English" : "বাংলা", "lang") + srow(t("digits"), P.dig === "bn" ? "০১২৩" : "0123", "dig") + srow(t("pw_chg"), "••••••", "pw");
+const commonRows = () => srow(t("lang"), P.lang === "en" ? "English" : "বাংলা", "lang") + srow(t("digits"), P.dig === "bn" ? "০১২৩" : "0123", "dig") + srow(t("hdr_t"), hdrVal(), "hdr") + srow(t("pw_chg"), "••••••", "pw");
 function bindEd(extra) {
   document.querySelectorAll("[data-ed]").forEach(b => b.onclick = () => {
     const k = b.dataset.ed;
     if (k === "lang" || k === "dig") return pickSheet(k);
     if (k === "pw") return pwSheet();
+    if (k === "hdr") return hdrSheet();
     extra(k);
   });
 }
@@ -746,13 +983,13 @@ function viewAdmin() {
 function drawAdmin() {
   const nv = navHtml(AT, A.tab);
   if (A.tab === "clients") {
-    show(`<div class="card"><h1>${t("tab_clients")}</h1><div class="brand">Quick Hisab by FaBi Hub · ${t("clients_n", { n: n(A.c.length) })}</div>
+    show(`<div class="card"><h1>${t("tab_clients")}</h1><div class="brand">${t("clients_n", { n: n(A.c.length) })}</div>
     ${A.c.map(x => { const s = A.s[x.id]; return `<div class="row" data-id="${x.id}" style="cursor:pointer"><div><b>${esc(x.shopName)}</b><div class="tag">${contact(x)}</div></div>
     <div style="text-align:right">${statusBadge(s)}<div class="tag">${s ? esc(s.plan) + " / " + esc(s.mode) + " · " + fmtDate(s.expiresAt) : ""}</div></div></div>`; }).join("") || `<div class="tag">${t("no_clients")}</div>`}</div>`, nv);
     $("#main").querySelectorAll(".row[data-id]").forEach(r => r.onclick = () => subSheet(r.dataset.id));
     return;
   }
-  show(`<div class="card"><h1>${t("tab_set")}</h1><div class="brand">Quick Hisab by FaBi Hub</div>
+  show(`<div class="card"><h1>${t("tab_set")}</h1>
   ${srow(t("trial_s"), dg(A.trial) + " " + t("dayu"), "trial")}<div class="tag" style="margin:-2px 0 8px">${t("trial_note")}</div>${commonRows()}</div>
   <button class="btn ghost sm" id="lo" style="width:100%">${t("logout")}</button>`, nv);
   bindEd(k => {
