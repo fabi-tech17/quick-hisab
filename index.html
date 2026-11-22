@@ -66,6 +66,12 @@ body.hd #app{padding-top:calc(72px + env(safe-area-inset-top))}
 select{width:100%;font:inherit;font-size:16px;padding:10px;border:1px solid var(--line);border-radius:10px;background:#fff}
 .nrow{display:flex;align-items:center;gap:8px;padding:3px 0}.nrow span{flex:0 0 auto;min-width:64px}.nrow input{width:90px;padding:6px 8px}.nrow b{flex:1;text-align:right;font-weight:500}
 .seg.s4 button{font-size:12.5px;padding:0 2px}
+.ofs{display:flex;gap:8px;overflow-x:auto;padding:6px 2px 8px;margin-top:6px}
+.of{flex:0 0 122px;border:1.5px solid var(--line);border-radius:12px;background:#fff;text-align:center;overflow:hidden;cursor:pointer}
+.of.on{border-color:#B8860B;background:#FBF3DC}.ot{font-size:11px;background:#e6dcc0;padding:1px 0;color:var(--soft)}.of.on .ot{background:#d9b96a;color:#fff}
+.od{font-size:20px;font-weight:700;padding:8px 4px 2px}.op{font-size:15px;padding:0 4px 8px}.op s{color:var(--soft);font-size:12px}
+.oq{font-size:12px;background:#efe6cf;padding:4px 0}.of.on .oq{background:#f3e3b0}
+details summary{list-style:none}details summary::-webkit-details-marker{display:none}
 </style>
 </head>
 <body>
@@ -76,7 +82,7 @@ select{width:100%;font:inherit;font-size:16px;padding:10px;border:1px solid var(
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signOut, reauthenticateWithCredential, EmailAuthProvider, updatePassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, collection, onSnapshot, writeBatch, getDoc, setDoc, updateDoc, query, where, increment, arrayUnion, serverTimestamp, Timestamp, getDocs, documentId, deleteField } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, collection, onSnapshot, writeBatch, getDoc, setDoc, updateDoc, query, where, increment, arrayUnion, serverTimestamp, Timestamp, getDocs, documentId, deleteField, runTransaction, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBKGFO5vpJlOWjbVkcEQVb_ipfr6oZnb68",
@@ -205,7 +211,21 @@ const T = {
   reject_ask:["এই পেমেন্ট রিকোয়েস্ট বাতিল করবেন?","Reject this payment request?"], inc_title:["সাবস্ক্রিপশন আয়","Subscription income"], inc_day:["দিন অনুযায়ী আয়","Income by day"],
   c_name:["ক্লায়েন্ট","Client"], c_plan:["প্ল্যান","Plan"], c_meth:["মাধ্যম","Method"], m_simple:["সিম্পল","Simple"], m_adv:["অ্যাডভান্স","Advance"],
   add_month:["+ মাসিক","+ Monthly"], add_year:["+ বার্ষিক","+ Yearly"], pr_month:["মাসিক দাম","Monthly price"], pr_year:["বার্ষিক দাম","Yearly price"], bk_no:["বিকাশ নম্বর","bKash number"], ng_no:["নগদ নম্বর","Nagad number"],
-  renew_amt:["টাকার অঙ্ক","Amount"], suspend:["বন্ধ করুন","Suspend"], activate:["চালু করুন","Activate"], mode_ask:["মোড বদলাবেন?","Change mode?"]
+  renew_amt:["টাকার অঙ্ক","Amount"], suspend:["বন্ধ করুন","Suspend"], activate:["চালু করুন","Activate"], mode_ask:["মোড বদলাবেন?","Change mode?"],
+  u_year:["{n} বছর","{n} year"], u_month:["{n} মাস","{n} month"], u_day:["{n} দিন","{n} days"], per_day:["প্রতিদিন","per day"],
+  off_t:["সাবস্ক্রিপশন অফার","Subscription offers"], off_none:["কোনো অফার নেই — + যোগ করুন","No offers — tap + Add"], off_new:["নতুন অফার","New offer"], off_edit:["অফার এডিট","Edit offer"],
+  off_days:["মেয়াদ (দিন)","Validity (days)"], off_price:["দাম (৳)","Price (৳)"], off_disc:["ছাড়ের পরিমাণ (৳)","Discount amount (৳)"], off_tag:["ট্যাগ (যেমন পপুলার, বেস্ট ডিল)","Tag (e.g. Popular, Best deal)"],
+  off_on:["চালু","Active"], off_off:["বন্ধ","Off"], off_del:["অফার মুছুন","Delete offer"], off_bad:["মেয়াদ, দাম ও ছাড় ঠিকভাবে দিন (ছাড় দামের বেশি হবে না)","Enter valid days, price and discount (discount cannot exceed the price)"],
+  off_del_ask:["এই অফার মুছে ফেলবেন?","Delete this offer?"], no_offer:["এখন কোনো অফার নেই — অ্যাডমিনের সাথে যোগাযোগ করুন","No offers right now — contact the admin"],
+  new_exp2:["নতুন মেয়াদ","New expiry"], pay_amt:["পরিশোধ","To pay"], pay_fail:["জমা হয়নি — TrxID আগে ব্যবহার হয়েছে বা অফার বদলে গেছে","Not submitted — TrxID already used or the offer changed"],
+  bill_t:["সাবস্ক্রিপশন বিল","Subscription bill"], bill_d:["পেমেন্টের বিবরণ","Payment details"], bill_no:["বিল / রেফারেন্স নং","Bill / reference no."], bill_offer:["মেয়াদ (অফার)","Validity (offer)"],
+  bill_list:["মূল দাম","List price"], bill_disc:["ছাড়","Discount"], bill_paid:["পরিশোধিত অঙ্ক","Amount paid"], bill_v:["বিবরণ","Details"], bill_dl:["বিল PDF","Bill PDF"],
+  ref_t:["রেফারেল","Referral"], ref_code:["রেফারেল কোড","Referral code"], ref_enter:["রেফারেল কোড দিন","Enter referral code"], ref_bad:["রেফারেল কোড ঠিক নয় বা আগেই ব্যবহার করা হয়েছে","Referral code invalid or already used"],
+  ref_how:["আপনার কোডে কেউ অ্যাকাউন্ট খুললে আপনি সাবস্ক্রিপশনে +{d} দিন পাবেন","When someone opens an account with your code you get +{d} subscription days"],
+  ref_used:["আপনার কোড ব্যবহার করেছেন","Used your code"], ref_people:["জন","people"], copy:["কপি","Copy"], copied:["কপি হয়েছে","Copied"],
+  tab_ref:["রেফারেল","Referrals"], ref_total:["মোট রেফার: {n}","Total referred: {n}"], ref_by_n:["রেফারার {n} জন","{n} referrers"], ref_none:["এখনো কোনো রেফারেল নেই","No referrals yet"],
+  ref_from:["রেফার করেছেন","Referred by"], ref_count:["রেফার করেছে","Referred"], ref_days_l:["রেফারেল সুবিধা (দিন)","Referral benefit (days)"], ref_trig_l:["সুবিধা কখন","Benefit when"],
+  trg_signup:["অ্যাকাউন্ট খুললেই","On account opening"], trg_pay:["প্রথম পেমেন্ট অনুমোদনের পর","After first approved payment"], ref_days_note:["০ = রেফারেল সুবিধা বন্ধ","0 = referral benefit off"], ref_wait:["অপেক্ষায়","Pending"]
 };
 const en = () => P.lang === "en";
 const t = (k, v) => { let s = (T[k] || [k, k])[en() ? 1 : 0]; if (v) for (const x in v) s = s.replace("{" + x + "}", v[x]); return s; };
@@ -241,7 +261,7 @@ const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&l
 const loadingH = () => `<div class="center">${t("loading")}</div>`;
 const contact = c => [c.ownerName, c.phone].filter(Boolean).map(esc).join(" · ");
 const OT = [["sale","৳","tab_sale"],["buy","🛒","tab_buy"],["exp","💸","tab_exp"],["khata","👥","tab_khata"],["acc","📊","tab_acc"],["set","⚙️","tab_set"]];
-const AT = [["clients","👥","tab_clients"],["inc","💰","tab_inc"],["set","⚙️","tab_set"]];
+const AT = [["clients","👥","tab_clients"],["ref","🎁","tab_ref"],["inc","💰","tab_inc"],["set","⚙️","tab_set"]];
 const navHtml = (tabs, cur) => tabs.map(([k, ic, l]) => `<button data-tab="${k}" class="${k === cur ? "on" : ""}"><b>${ic}</b>${t(l)}</button>`).join("");
 const show = (h, nv = "") => {
   $("#main").innerHTML = h; $("#nav").innerHTML = nv; renderHd();
@@ -283,7 +303,7 @@ async function createProfile(p) {
 function viewAuth(mode = "login") {
   const reg = mode === "reg";
   show(`<div class="card"><h1>Quick Hisab</h1><div class="brand">by FaBi Hub</div>
-  <form id="f">${reg ? profileFields() : ""}
+  <form id="f">${reg ? profileFields() + `<label>${t("ref_code")}${t("opt")}</label><input id="rc" autocomplete="off">` : ""}
   <label>${t("email")}</label><input id="em" type="email" autocomplete="email" required>
   <label>${t("pw")}</label><input id="pw" type="password" minlength="6" autocomplete="${reg ? "new-password" : "current-password"}" required>
   <div class="msg" id="m"></div><button class="btn" id="go">${t(reg ? "reg" : "login")}</button></form>
@@ -302,7 +322,8 @@ function viewAuth(mode = "login") {
     const go = $("#go"), m = $("#m"), em = $("#em").value.trim(), pw = $("#pw").value;
     go.disabled = true; m.className = "msg"; m.textContent = "";
     try {
-      if (reg) { const p = readProfile(); S.registering = true; await createUserWithEmailAndPassword(auth, em, pw); await createProfile(p); S.registering = false; }
+      if (reg) { const p = readProfile(), rc = ($("#rc") ? $("#rc").value : "").trim(); S.registering = true; await createUserWithEmailAndPassword(auth, em, pw); await createProfile(p);
+        if (rc) useCode(rc, p.shopName).then(ok => { if (!ok) toast(t("ref_bad"), 7000); }); S.registering = false; }
       else await signInWithEmailAndPassword(auth, em, pw);
     } catch (e) { S.registering = false; m.textContent = errMsg(e); go.disabled = false; }
   };
@@ -319,7 +340,7 @@ const canWrite = () => S.sub && S.sub.status === "active" && Date.now() < S.sub.
 const head = () => "";
 
 function viewOwner(u) {
-  S = { uid: u.uid, client: undefined, sub: undefined, cust: [], supp: [], rec: [], recPaid: [], tab: "sale", kt: "cust", et: "exp", ledger: null, led: { s: [], r: [] }, drawn: false, days: {}, daysFrom: addDays(todayStr(), -60), cd: null, at: "cash", rt: "sum", rf: null, rto: null, cn: { q: {}, o: "" }, set: null, cfg: {}, pays: [], loanP: [], partners: [], rm: null, rl: "", registering: S.registering };
+  S = { uid: u.uid, client: undefined, sub: undefined, cust: [], supp: [], rec: [], recPaid: [], tab: "sale", kt: "cust", et: "exp", ledger: null, led: { s: [], r: [] }, drawn: false, days: {}, daysFrom: addDays(todayStr(), -60), cd: null, at: "cash", rt: "sum", rf: null, rto: null, cn: { q: {}, o: "" }, set: null, cfg: {}, pays: [], offers: [], myCodes: [], refsMine: [], refBy: null, loanP: [], partners: [], rm: null, rl: "", registering: S.registering };
   ALLQ().forEach(e => { e.q.un && e.q.un(); e.q = mkQ(); });
   const col = c => collection(db, "clients", u.uid, c);
   const onErr = e => show(`<div class="card"><div class="msg">${esc(errMsg(e))}</div><button class="btn ghost" id="lo">${t("logout")}</button></div>`);
@@ -334,6 +355,11 @@ function viewOwner(u) {
   unsubs.push(onSnapshot(doc(db, "clients", u.uid, "meta", "settings"), d => { S.set = d.exists() ? d.data() : null; refresh(); }, onErr));
   unsubs.push(onSnapshot(doc(db, "config", "app"), d => { S.cfg = d.exists() ? d.data() : {}; refresh(); }, onErr));
   unsubs.push(onSnapshot(query(collection(db, "payments"), where("uid", "==", u.uid)), q => { S.pays = q.docs.map(d => ({ id: d.id, ...d.data() })); refreshPays(); }, onErr));
+  const soft = () => {};
+  unsubs.push(onSnapshot(collection(db, "offers"), q => { S.offers = q.docs.map(d => ({ id: d.id, ...d.data() })); refresh(); }, soft));
+  unsubs.push(onSnapshot(query(collection(db, "refCodes"), where("uid", "==", u.uid)), q => { S.myCodes = q.docs.map(d => d.id); if (!q.size && !S.rcTry) { S.rcTry = true; ensureRefCode(); } refresh(); }, soft));
+  unsubs.push(onSnapshot(query(collection(db, "referrals"), where("referrerUid", "==", u.uid)), q => { S.refsMine = q.docs.map(d => ({ id: d.id, ...d.data() })); refresh(); }, soft));
+  unsubs.push(onSnapshot(doc(db, "referrals", u.uid), d => { S.refBy = d.exists() ? d.data() : null; refresh(); }, soft));
   listenRec();
   S.timer = setInterval(() => {
     ALLQ().forEach(e => { if (e.q.un && !e.q.sd && e.q.day !== todayStr()) listen(e.q, e.col, refresh); });
@@ -1142,31 +1168,76 @@ function beat() {
 }
 document.addEventListener("visibilitychange", () => { if (!document.hidden) beat(); });
 const stBadge = x => `<span class="badge ${x === "approved" ? "b-ok" : x === "rejected" ? "b-bad" : "b-warn"}">${t("st_" + x)}</span>`;
-const payHist = () => S.pays.length ? [...S.pays].sort((x, y) => ms(y) - ms(x)).map(p => `<div class="row"><div><b>${t(p.plan === "yearly" ? "yearly" : "monthly")} · ৳${n(p.amount)}</b><div class="tag">${esc(p.method)} ${esc(p.trxId || "")} · ${p.createdAt ? fmtDate(p.createdAt) : ""}</div></div>${stBadge(p.status)}</div>`).join("") : `<div class="tag">${t("no_pay")}</div>`;
-function refreshPays() { const e = $("#ph2"); if (e) e.innerHTML = payHist(); }
+const fin = o => Math.max(0, r2((o.price || 0) - (o.discount || 0)));
+const pd = x => x.days || (x.plan === "yearly" ? 365 : 30);
+const daysLabel = d => d % 365 === 0 ? t("u_year", { n: n(d / 365) }) : d % 30 === 0 ? t("u_month", { n: n(d / 30) }) : t("u_day", { n: n(d) });
+const payHist = () => S.pays.length ? [...S.pays].sort((x, y) => ms(y) - ms(x)).map(p => `<div class="row"><div><b>${daysLabel(pd(p))} · ৳${n(p.amount)}</b><div class="tag">${esc(p.method)} ${esc(p.trxId || "")} · ${p.createdAt ? fmtDate(p.createdAt) : ""}</div></div>
+  <div style="text-align:right">${stBadge(p.status)}<div><button class="ib" data-bill="${p.id}">${t("bill_dl")}</button></div></div></div>`).join("") : `<div class="tag">${t("no_pay")}</div>`;
+const bindBills = e => e.querySelectorAll("[data-bill]").forEach(b => b.onclick = () => billDl(b.dataset.bill));
+function refreshPays() { const e = $("#ph2"); if (e) { e.innerHTML = payHist(); bindBills(e); } }
+function buildBill(p) {
+  const c = S.client, d = p.createdAt ? fmtDate(p.createdAt) : "";
+  return { file: "bill-" + p.id, title: t("bill_t"), sub: d, blocks: [{ head: t("bill_d"), cols: [t("r_item"), t("bill_v")], rows: [
+    [t("bill_no"), p.id], [t("r_date"), d], [t("shop"), c.shopName], [t("owner"), c.ownerName], [t("phone"), c.phone || "—"], [t("bill_offer"), daysLabel(pd(p))],
+    [t("bill_list"), p.listPrice ?? p.amount], [t("bill_disc"), p.discount || 0], [t("bill_paid"), p.amount], [t("c_meth"), p.method === "manual" ? "Manual" : p.method], ["TrxID", p.trxId || "—"], [t("status"), t("st_" + p.status)]] }] };
+}
+function billDl(id) { const p = S.pays.find(x => x.id === id); if (!p) return; toast(t("rep_make"), 8000); pdfReport(buildBill(p)).catch(fail); }
+// সাবস্ক্রিপশন স্ক্রিন: অফার কার্ড (মেয়াদ, কাটা মূল দাম → ছাড়ের পর দাম, প্রতিদিন কত)
 function paySheet() {
-  const c = S.cfg || {}; let plan = "monthly", method = "bkash";
-  const price = () => (plan === "yearly" ? c.yearlyPrice : c.monthlyPrice) || "";
+  const c = S.cfg || {}, offs = S.offers.filter(o => o.active !== false).sort((x, y) => x.days - y.days);
+  let sel = offs.length ? offs[0].id : null, method = "bkash";
+  const cur = () => offs.find(o => o.id === sel);
+  const cards = () => offs.map(o => { const f = fin(o); return `<div class="of ${o.id === sel ? "on" : ""}" data-of="${o.id}"><div class="ot">${o.tag ? esc(o.tag) : "&nbsp;"}</div><div class="od">${daysLabel(o.days)}</div>
+    <div class="op">${o.discount > 0 ? `<s>৳${n(o.price)}</s> ` : ""}৳${n(f)}</div><div class="oq">৳${n(f / o.days)} ${t("per_day")}</div></div>`; }).join("");
   const o = sheet(`<b>${t("renew")}</b><div class="tag">${t("pay_how")}</div>
-  <div class="srow" style="margin-top:8px"><span>bKash</span><b>${esc(c.bkash || "—")}</b></div><div class="srow"><span>Nagad</span><b>${esc(c.nagad || "—")}</b></div>
-  <div class="seg"><button data-pl="monthly" class="on">${t("monthly")}${c.monthlyPrice ? " ৳" + n(c.monthlyPrice) : ""}</button><button data-pl="yearly">${t("yearly")}${c.yearlyPrice ? " ৳" + n(c.yearlyPrice) : ""}</button></div>
+  ${offs.length ? `<div class="ofs">${cards()}</div><div class="row" id="pinf" style="border:0"></div>` : `<div class="msg">${t("no_offer")}</div>`}
+  <div class="srow"><span>bKash</span><b>${esc(c.bkash || "—")}</b></div><div class="srow"><span>Nagad</span><b>${esc(c.nagad || "—")}</b></div>
   <div class="seg"><button data-me="bkash" class="on">bKash</button><button data-me="nagad">Nagad</button></div>
-  <label>${t("amount")}</label><input id="pa" inputmode="decimal" value="${price()}"><label>TrxID</label><input id="px" autocomplete="off">
-  <div class="msg" id="pm"></div><button class="btn" id="ps2" style="margin-top:6px">${t("pay_send")}</button><div class="sh2" style="margin-top:12px">${t("pay_hist")}</div><div id="ph2">${payHist()}</div>`);
+  <label>TrxID</label><input id="px" autocomplete="off"><div class="msg" id="pm"></div>
+  <button class="btn" id="ps2" style="margin-top:6px"${offs.length ? "" : " disabled"}>${t("pay_send")}</button>
+  <div class="sh2" style="margin-top:12px">${t("pay_hist")}</div><div id="ph2">${payHist()}</div>`);
   const q = z => o.querySelector(z);
-  o.querySelectorAll("[data-pl]").forEach(b => b.onclick = () => { plan = b.dataset.pl; o.querySelectorAll("[data-pl]").forEach(x => x.className = x === b ? "on" : ""); q("#pa").value = price(); });
+  const info = () => { const f = cur(); if (!f || !q("#pinf")) return; const base = new Date(Math.max(Date.now(), S.sub ? S.sub.expiresAt.toMillis() : 0)); base.setDate(base.getDate() + f.days);
+    q("#pinf").innerHTML = `<span>${t("pay_amt")}: <b>৳ ${n(fin(f))}</b></span><span class="tag">${t("new_exp2")}: ${fmtDate({ toDate: () => base })}</span>`; };
+  o.querySelectorAll(".of").forEach(b => b.onclick = () => { sel = b.dataset.of; o.querySelectorAll(".of").forEach(x => x.classList.toggle("on", x.dataset.of === sel)); info(); });
   o.querySelectorAll("[data-me]").forEach(b => b.onclick = () => { method = b.dataset.me; o.querySelectorAll("[data-me]").forEach(x => x.className = x === b ? "on" : ""); });
+  bindBills(q("#ph2")); info();
   q("#ps2").onclick = async () => {
-    const trx = q("#px").value.trim(), amt = calc(q("#pa").value), m = q("#pm"); m.className = "msg";
+    const f = cur(), trx = q("#px").value.trim(), m = q("#pm"); m.className = "msg"; if (!f) return;
     if (!/^[A-Za-z0-9]{4,30}$/.test(trx)) return m.textContent = t("trx_bad");
-    if (isNaN(amt) || amt <= 0) return m.textContent = t("bad_amt");
     if (!navigator.onLine) return m.textContent = t("e_net");
     q("#ps2").disabled = true;
-    try { await setDoc(doc(db, "payments", method + "_" + trx), { uid: S.uid, plan, amount: r2(amt), method, trxId: trx, status: "pending", createdAt: serverTimestamp() }); m.className = "msg ok"; m.textContent = t("pay_sent"); q("#px").value = ""; }
-    catch (e) { m.textContent = e.code === "permission-denied" ? t("trx_dup") : errMsg(e); }
+    try { await setDoc(doc(db, "payments", method + "_" + trx), { uid: S.uid, offerId: f.id, days: f.days, listPrice: f.price, discount: f.discount || 0, amount: f.price - (f.discount || 0), method, trxId: trx, status: "pending", createdAt: serverTimestamp() });
+      m.className = "msg ok"; m.textContent = t("pay_sent"); q("#px").value = ""; }
+    catch (e) { m.textContent = e.code === "permission-denied" ? t("pay_fail") : errMsg(e); }
     q("#ps2").disabled = false;
   };
 }
+// ---- রেফারেল ----
+const rl4 = () => { const a = new Uint32Array(4); crypto.getRandomValues(a); return [...a].map(v => "ABCDEFGHJKLMNPQRSTUVWXYZ"[v % 24]).join(""); };
+async function ensureRefCode() {
+  for (let i = 0; i < 6; i++) {
+    try { await setDoc(doc(db, "refCodes", "QuickHisab-FaBiHub-" + rl4()), { uid: S.uid, createdAt: serverTimestamp() }); return; } catch (e) { if (e.code !== "permission-denied") return; }
+  }
+}
+async function useCode(raw, shop) {
+  const m = String(raw).trim().match(/([A-Za-z]{4})$/); if (!m) return false;
+  const code = "QuickHisab-FaBiHub-" + m[1].toUpperCase(), uid = auth.currentUser.uid;
+  try {
+    const sn = await getDoc(doc(db, "refCodes", code)); if (!sn.exists() || sn.data().uid === uid) return false;
+    await setDoc(doc(db, "referrals", uid), { referredUid: uid, referrerUid: sn.data().uid, code, shopName: shop || "", createdAt: serverTimestamp(), applied: false });
+    return true;
+  } catch (e) { return false; }
+}
+function refSheet() {
+  const code = S.myCodes[0] || "", c = S.cfg || {}, list = [...S.refsMine].sort((x, y) => ms(y) - ms(x));
+  const o = sheet(`<b>${t("ref_t")}</b><div class="tag">${t("ref_how", { d: n(c.refDays || 0) })}</div>
+  <div class="srow" style="margin-top:8px"><span>${t("ref_code")}</span><b style="font-weight:700;color:var(--maroon)">${esc(code) || "…"}</b><button class="ib" id="rcp">${t("copy")}</button></div>
+  <div class="row"><span>${t("ref_used")}</span><b>${dg(list.length)} ${t("ref_people")}</b></div>
+  ${list.map(r => `<div class="row"><div>${esc(r.shopName || "")}<div class="tag">${r.createdAt ? fmtDate(r.createdAt) : ""}</div></div>${r.applied ? `<span class="badge b-ok">+${dg(r.days || 0)} ${t("dayu")}</span>` : `<span class="badge b-warn">${t("ref_wait")}</span>`}</div>`).join("")}`);
+  o.querySelector("#rcp").onclick = () => { if (code && navigator.clipboard) navigator.clipboard.writeText(code).then(() => toast(t("copied"))).catch(() => {}); };
+}
+
 function notesSheet() {
   let list = [...notesList()];
   const o = sheet(`<b>${t("notes_t")}</b><div id="nl" style="display:flex;flex-wrap:wrap;gap:6px;margin:10px 0"></div>
@@ -1227,6 +1298,7 @@ function drawSet() {
   const c = S.client, s = S.sub;
   const upd = (key, req) => v => { if (req && !v) return t("bad_name"); updateDoc(doc(db, "clients", S.uid), { [key]: v }).then(() => toast(t("saved"))).catch(fail); };
   show(`<div class="card">${srow(t("status"), statusBadge(s))}${srow(t("plan") + " / " + t("mode"), s ? esc(s.plan + " / " + s.mode) : "—")}${srow(t("expiry"), s ? fmtDate(s.expiresAt) : "—")}${srow(t("renew"), "", "renew")}</div>
+  <div class="card"><div class="sh2">${t("ref_t")}</div>${srow(t("ref_code"), esc(S.myCodes[0] || "…"), "ref")}${S.refBy ? "" : srow(t("ref_enter"), "", "refin")}</div>
   <div class="card"><div class="sh2">${t("prof_t")}</div>${srow(t("shop"), esc(c.shopName), "shop")}${srow(t("owner"), esc(c.ownerName), "owner")}${srow(t("phone"), esc(c.phone) || "—", "phone")}</div>
   <div class="card"><div class="sh2">${t("app_t")}</div>${srow(t("notes_t"), notesList().map(dg).join(", "), "notes")}${commonRows()}</div>
   <button class="btn ghost sm" id="lo" style="width:100%">${t("logout")}</button>`, navHtml(OT, "set"));
@@ -1234,6 +1306,8 @@ function drawSet() {
     if (k === "shop") fieldSheet(t("shop"), c.shopName, upd("shopName", 1));
     if (k === "owner") fieldSheet(t("owner"), c.ownerName, upd("ownerName", 1));
     if (k === "phone") fieldSheet(t("phone") + t("opt"), c.phone || "", upd("phone"), "tel");
+    if (k === "ref") refSheet();
+    if (k === "refin") fieldSheet(t("ref_code"), "", async v => { if (!(await useCode(v, c.shopName))) return t("ref_bad"); toast(t("saved")); });
   });
 }
 
@@ -1245,26 +1319,54 @@ function ago(ts) {
   return d < 6e4 ? t("ago_now") : m < 60 ? t("ago_m", { n: dg(m) }) : m < 1440 ? t("ago_h", { n: dg(Math.floor(m / 60)) }) : t("ago_d", { n: dg(Math.floor(m / 1440)) });
 }
 const cf = k => (A.cfg || {})[k];
+const cname = id => { const c = A.c.find(z => z.id === id); return c ? c.shopName : id; };
 function viewAdmin() {
-  A = { tab: "clients", c: [], s: {}, pend: [], cfg: {}, sort: "active", ia: null, ib: null, R: null };
-  const onErr = e => show(`<div class="card"><div class="msg">${esc(errMsg(e))}</div><button class="btn ghost" id="lo">${t("logout")}</button></div>`);
-  const redraw = () => { if (A.tab === "clients") drawAdmin(); };
+  A = { tab: "clients", c: [], s: {}, pend: [], cfg: {}, sort: "active", ia: null, ib: null, R: null, offers: [], refs: [], codes: {}, busy: {} };
+  const onErr = e => show(`<div class="card"><div class="msg">${esc(errMsg(e))}</div><button class="btn ghost" id="lo">${t("logout")}</button></div>`), soft = () => {};
+  const redraw = () => { if (A.tab !== "inc") drawAdmin(); };
   unsubs.push(onSnapshot(collection(db, "clients"), q => { A.c = q.docs.map(d => ({ id: d.id, ...d.data() })); redraw(); }, onErr));
-  unsubs.push(onSnapshot(collection(db, "subscriptions"), q => { A.s = {}; q.docs.forEach(d => A.s[d.id] = d.data()); redraw(); }, onErr));
+  unsubs.push(onSnapshot(collection(db, "subscriptions"), q => { A.s = {}; q.docs.forEach(d => A.s[d.id] = d.data()); procRefs(); redraw(); }, onErr));
   unsubs.push(onSnapshot(query(collection(db, "payments"), where("status", "==", "pending")), q => { A.pend = q.docs.map(d => ({ id: d.id, ...d.data() })); redraw(); }, onErr));
-  unsubs.push(onSnapshot(doc(db, "config", "app"), d => { A.cfg = d.exists() ? d.data() : {}; if (A.tab !== "inc") drawAdmin(); }, onErr));
+  unsubs.push(onSnapshot(doc(db, "config", "app"), d => { A.cfg = d.exists() ? d.data() : {}; procRefs(); redraw(); }, onErr));
+  unsubs.push(onSnapshot(collection(db, "offers"), q => { A.offers = q.docs.map(d => ({ id: d.id, ...d.data() })); redraw(); }, soft));
+  unsubs.push(onSnapshot(collection(db, "referrals"), q => { A.refs = q.docs.map(d => ({ id: d.id, ...d.data() })); procRefs(); redraw(); }, soft));
+  unsubs.push(onSnapshot(collection(db, "refCodes"), q => { A.codes = {}; q.docs.forEach(d => A.codes[d.data().uid] = d.id); redraw(); }, soft));
   drawAdmin();
+}
+// রেফারেল সুবিধা: অ্যাডমিন অ্যাপ খোলা থাকলে নিজে থেকে রেফারারের মেয়াদ বাড়ায় (একবারই, transaction দিয়ে)
+function procRefs() {
+  const days = +cf("refDays") || 0; if (!(days > 0)) return; const trig = cf("refTrigger") || "payment";
+  A.refs.filter(r => !r.applied && A.s[r.referrerUid] && (trig === "signup" || (A.s[r.referredUid] && A.s[r.referredUid].lastPaidAt))).forEach(applyRef);
+}
+async function applyRef(r) {
+  const days = +cf("refDays") || 0; if (!(days > 0) || A.busy[r.id]) return; A.busy[r.id] = 1;
+  try {
+    await runTransaction(db, async tx => {
+      const rs = doc(db, "referrals", r.id), ss = doc(db, "subscriptions", r.referrerUid), a = await tx.get(rs), b = await tx.get(ss);
+      if (!a.exists() || a.data().applied || !b.exists()) return;
+      const base = new Date(Math.max(Date.now(), b.data().expiresAt.toMillis())); base.setDate(base.getDate() + days);
+      tx.update(ss, { expiresAt: Timestamp.fromDate(base) }); tx.update(rs, { applied: true, appliedAt: serverTimestamp(), days });
+    });
+  } catch (e) { delete A.busy[r.id]; }
 }
 function drawAdmin() {
   if (A.tab === "inc") return drawInc();
   const nv = navHtml(AT, A.tab);
+  if (A.tab === "ref") {
+    const g = {}; A.refs.forEach(r => (g[r.referrerUid] = g[r.referrerUid] || []).push(r));
+    const list = Object.entries(g).sort((x, y) => y[1].length - x[1].length);
+    show(`<div class="card"><h1>${t("tab_ref")}</h1><div class="brand">${t("ref_total", { n: n(A.refs.length) })} · ${t("ref_by_n", { n: n(list.length) })}</div>
+    ${list.map(([uid, rs]) => `<details style="border-bottom:1px dashed var(--line);padding:8px 0"><summary style="cursor:pointer"><b>${esc(cname(uid))}</b> <span class="badge b-ok">${dg(rs.length)}</span><div class="tag">${esc(A.codes[uid] || "")}</div></summary>
+      ${[...rs].sort((x, y) => lmo(y.createdAt) - lmo(x.createdAt)).map(r => `<div class="row"><div>${esc(r.shopName || cname(r.referredUid))}<div class="tag">${r.createdAt ? fmtDate(r.createdAt) : ""}</div></div>${r.applied ? `<span class="badge b-ok">+${dg(r.days || 0)} ${t("dayu")}</span>` : `<span class="badge b-warn">${t("ref_wait")}</span>`}</div>`).join("")}</details>`).join("") || `<div class="tag">${t("ref_none")}</div>`}</div>`, nv);
+    return;
+  }
   if (A.tab === "clients") {
     const em = x => A.s[x.id] ? A.s[x.id].expiresAt.toMillis() : Infinity;
     const so = { active: (x, y) => lmo(y.lastActive) - lmo(x.lastActive), name: (x, y) => (x.shopName || "").localeCompare(y.shopName || "", "bn"), exp: (x, y) => em(x) - em(y), new: (x, y) => lmo(y.createdAt) - lmo(x.createdAt) };
     const list = [...A.c].sort(so[A.sort]);
-    const pend = A.pend.length ? `<div class="card"><div class="sh2">${t("pend_t")} (${dg(A.pend.length)})</div>${A.pend.map(p => { const c = A.c.find(z => z.id === p.uid); return `<div class="row" style="align-items:flex-start"><div><b>${esc(c ? c.shopName : p.uid)}</b>
-      <div class="tag">${t(p.plan === "yearly" ? "yearly" : "monthly")} · ৳${n(p.amount)} · ${esc(p.method)} · ${esc(p.trxId)}</div><div class="tag">${p.createdAt ? fmtDate(p.createdAt) : ""}</div></div>
-      <div style="white-space:nowrap"><button class="ib" data-ap="${p.id}">${t("approve")}</button><button class="ib" data-rj="${p.id}" style="color:var(--red)">${t("reject")}</button></div></div>`; }).join("")}</div>` : "";
+    const pend = A.pend.length ? `<div class="card"><div class="sh2">${t("pend_t")} (${dg(A.pend.length)})</div>${A.pend.map(p => `<div class="row" style="align-items:flex-start"><div><b>${esc(cname(p.uid))}</b>
+      <div class="tag">${daysLabel(pd(p))} · ৳${n(p.amount)} · ${esc(p.method)} · ${esc(p.trxId)}</div><div class="tag">${p.createdAt ? fmtDate(p.createdAt) : ""}</div></div>
+      <div style="white-space:nowrap"><button class="ib" data-ap="${p.id}">${t("approve")}</button><button class="ib" data-rj="${p.id}" style="color:var(--red)">${t("reject")}</button></div></div>`).join("")}</div>` : "";
     show(`${pend}<div class="card"><div class="row" style="padding-top:0"><div><h1 style="margin:0">${t("tab_clients")}</h1><div class="brand" style="margin:0">${t("clients_n", { n: n(A.c.length) })}</div></div>
     <select id="srt" style="width:auto;padding:6px 8px;font-size:13px">${[["active", "so_active"], ["name", "so_name"], ["exp", "so_exp"], ["new", "so_new"]].map(([k, l]) => `<option value="${k}" ${A.sort === k ? "selected" : ""}>${t(l)}</option>`).join("")}</select></div>
     ${list.map(x => { const s = A.s[x.id], rc = x.lastActive && Date.now() - lmo(x.lastActive) < 15 * 6e4; return `<div class="row" data-id="${x.id}" style="cursor:pointer"><div><b>${esc(x.shopName)}</b><div class="tag">${contact(x)}</div>
@@ -1276,59 +1378,86 @@ function drawAdmin() {
     $("#main").querySelectorAll("[data-rj]").forEach(b => b.onclick = () => rejectPay(A.pend.find(p => p.id === b.dataset.rj)));
     return;
   }
-  const trial = Number.isInteger(cf("trialDays")) ? cf("trialDays") : DEFAULT_TRIAL_DAYS;
+  const trial = Number.isInteger(cf("trialDays")) ? cf("trialDays") : DEFAULT_TRIAL_DAYS, rd = +cf("refDays") || 0;
   show(`<div class="card"><h1>${t("tab_set")}</h1>${srow(t("trial_s"), dg(trial) + " " + t("dayu"), "trial")}<div class="tag" style="margin:-2px 0 8px">${t("trial_note")}</div>
-  ${srow(t("pr_month"), "৳ " + n(cf("monthlyPrice")), "pm")}${srow(t("pr_year"), "৳ " + n(cf("yearlyPrice")), "py")}${srow(t("bk_no"), esc(cf("bkash") || "—"), "bk")}${srow(t("ng_no"), esc(cf("nagad") || "—"), "ng")}${commonRows()}</div>
+  ${srow(t("bk_no"), esc(cf("bkash") || "—"), "bk")}${srow(t("ng_no"), esc(cf("nagad") || "—"), "ng")}${srow(t("ref_days_l"), dg(rd) + " " + t("dayu"), "rd")}<div class="tag" style="margin:-2px 0 8px">${t("ref_days_note")}</div>
+  ${srow(t("ref_trig_l"), t(cf("refTrigger") === "signup" ? "trg_signup" : "trg_pay"), "rt")}${commonRows()}</div>
+  <div class="card"><div class="row" style="padding-top:0"><b>${t("off_t")}</b><button class="ib" id="oa">${t("rec_add")}</button></div>
+  ${A.offers.length ? [...A.offers].sort((x, y) => x.days - y.days).map(o => `<div class="srow"><span>${daysLabel(o.days)}</span><b>${o.discount > 0 ? `<s>৳${n(o.price)}</s> ` : ""}৳${n(fin(o))}${o.tag ? " · " + esc(o.tag) : ""}${o.active === false ? " · " + t("off_off") : ""}</b><button class="ib" data-of="${o.id}">✎</button></div>`).join("") : `<div class="tag">${t("off_none")}</div>`}</div>
   <button class="btn ghost sm" id="lo" style="width:100%">${t("logout")}</button>`, nv);
-  const put = (key, label, num, cur) => fieldSheet(label, cur ?? "", async v => {
-    let val = v; if (num) { val = calc(v); if (isNaN(val) || val < 0) return t("bad_amt"); val = r2(val); }
-    await setDoc(doc(db, "config", "app"), { [key]: val }, { merge: true }); toast(t("saved"));
-  }, num ? "decimal" : "");
+  $("#oa").onclick = () => offerSheet(null);
+  document.querySelectorAll("[data-of]").forEach(b => b.onclick = () => offerSheet(A.offers.find(o => o.id === b.dataset.of)));
+  const put = (key, label, cur) => fieldSheet(label, cur ?? "", async v => { await setDoc(doc(db, "config", "app"), { [key]: v }, { merge: true }); toast(t("saved")); });
   bindEd(k => {
     if (k === "trial") fieldSheet(t("trial_lbl"), trial, async v => {
       const x = Number(norm(v)); if (v === "" || !Number.isInteger(x) || x < 0 || x > 365) return t("trial_bad");
       await setDoc(doc(db, "config", "app"), { trialDays: x }, { merge: true }); toast(t("saved"));
     }, "numeric");
-    if (k === "pm") put("monthlyPrice", t("pr_month"), 1, cf("monthlyPrice"));
-    if (k === "py") put("yearlyPrice", t("pr_year"), 1, cf("yearlyPrice"));
-    if (k === "bk") put("bkash", t("bk_no"), 0, cf("bkash"));
-    if (k === "ng") put("nagad", t("ng_no"), 0, cf("nagad"));
+    if (k === "bk") put("bkash", t("bk_no"), cf("bkash"));
+    if (k === "ng") put("nagad", t("ng_no"), cf("nagad"));
+    if (k === "rd") fieldSheet(t("ref_days_l"), rd, async v => {
+      const x = Number(norm(v)); if (v === "" || !Number.isInteger(x) || x < 0 || x > 365) return t("trial_bad");
+      await setDoc(doc(db, "config", "app"), { refDays: x }, { merge: true }); toast(t("saved"));
+    }, "numeric");
+    if (k === "rt") {
+      const o = sheet(`<b>${t("ref_trig_l")}</b><div class="seg" style="flex-direction:column">${[["signup", "trg_signup"], ["payment", "trg_pay"]].map(([v, l]) => `<button data-v="${v}" class="${(cf("refTrigger") || "payment") === v ? "on" : ""}">${t(l)}</button>`).join("")}</div>`);
+      o.querySelectorAll("[data-v]").forEach(b => b.onclick = () => { setDoc(doc(db, "config", "app"), { refTrigger: b.dataset.v }, { merge: true }).then(() => toast(t("saved"))).catch(fail); closeSheet(); });
+    }
   });
 }
+// অফার তৈরি/এডিট/মুছে ফেলা: মেয়াদ (দিন), দাম, ছাড়ের পরিমাণ, ঐচ্ছিক ট্যাগ
+function offerSheet(of) {
+  let act = !of || of.active !== false;
+  const o = sheet(`<b>${t(of ? "off_edit" : "off_new")}</b><label>${t("off_days")}</label><input id="od1" inputmode="numeric" value="${of ? of.days : ""}">
+  <label>${t("off_price")}</label><input id="op1" inputmode="decimal" value="${of ? of.price : ""}"><label>${t("off_disc")}</label><input id="oc1" inputmode="decimal" value="${of ? (of.discount || 0) : ""}">
+  <label>${t("off_tag")}</label><input id="ot1" value="${esc(of?.tag)}"><div class="seg"><button data-a="1" class="${act ? "on" : ""}">${t("off_on")}</button><button data-a="0" class="${!act ? "on" : ""}">${t("off_off")}</button></div>
+  <div class="msg" id="om"></div><button class="btn" id="os" style="margin-top:6px">${t("save")}</button>${of ? `<button class="btn ghost" id="odl" style="color:var(--red);border-color:var(--red)">${t("off_del")}</button>` : ""}`);
+  const q = z => o.querySelector(z);
+  o.querySelectorAll("[data-a]").forEach(b => b.onclick = () => { act = b.dataset.a === "1"; o.querySelectorAll("[data-a]").forEach(x => x.className = x === b ? "on" : ""); });
+  q("#os").onclick = () => {
+    const days = Number(norm(q("#od1").value)), price = calc(q("#op1").value), dv = q("#oc1").value.trim(), disc = dv ? calc(dv) : 0;
+    if (!Number.isInteger(days) || days < 1 || days > 3650 || isNaN(price) || price < 0 || isNaN(disc) || disc < 0 || disc > price) return q("#om").textContent = t("off_bad");
+    const d = { days, price: r2(price), discount: r2(disc), tag: q("#ot1").value.trim(), active: act, updatedAt: serverTimestamp() };
+    if (of) setDoc(doc(db, "offers", of.id), d, { merge: true }).catch(fail); else setDoc(doc(collection(db, "offers")), { ...d, createdAt: serverTimestamp() }).catch(fail);
+    closeSheet(); toast(t("saved"));
+  };
+  if (of) q("#odl").onclick = () => { if (confirm(t("off_del_ask"))) { deleteDoc(doc(db, "offers", of.id)).catch(fail); closeSheet(); } };
+}
 async function approvePay(p) {
-  const s = A.s[p.uid]; if (!p || !s) return toast(t("b_none"));
+  const s = p && A.s[p.uid]; if (!s) return toast(t("b_none"));
   if (!(await askPassword())) return;
-  const base = new Date(Math.max(Date.now(), s.expiresAt.toMillis())); base.setDate(base.getDate() + (p.plan === "yearly" ? 365 : 30));
+  const days = pd(p), base = new Date(Math.max(Date.now(), s.expiresAt.toMillis())); base.setDate(base.getDate() + days);
   const b = writeBatch(db);
   b.update(doc(db, "payments", p.id), { status: "approved", date: todayStr(), decidedAt: serverTimestamp(), decidedBy: auth.currentUser.uid });
-  b.update(doc(db, "subscriptions", p.uid), { plan: p.plan, expiresAt: Timestamp.fromDate(base), status: "active", lastPaidAmount: p.amount, lastPaidAt: serverTimestamp() });
+  b.update(doc(db, "subscriptions", p.uid), { plan: days >= 300 ? "yearly" : "monthly", expiresAt: Timestamp.fromDate(base), status: "active", lastPaidAmount: p.amount, lastPaidAt: serverTimestamp() });
   b.commit().then(() => toast(t("approve_ok"))).catch(fail);
 }
 function rejectPay(p) {
   if (!p || !confirm(t("reject_ask"))) return;
   updateDoc(doc(db, "payments", p.id), { status: "rejected", decidedAt: serverTimestamp(), decidedBy: auth.currentUser.uid }).then(() => toast(t("rej_ok"))).catch(fail);
 }
-// ক্লায়েন্টের সাবস্ক্রিপশন: +মাসিক/+বার্ষিক (আয় হিসেবে জমা), মেয়াদের তারিখ বদল (কমালে সতর্কতা), মোড, বন্ধ/চালু। সময় বদলাতে পাসওয়ার্ড লাগে
+// ক্লায়েন্টের সাবস্ক্রিপশন: অফার বেছে সরাসরি রিনিউ (আয়ে জমা), মেয়াদের তারিখ বদল (কমালে সতর্কতা), মোড, বন্ধ/চালু। সময় বদলাতে পাসওয়ার্ড লাগে
 function subSheet(id) {
   const x = A.c.find(c => c.id === id), s = A.s[id]; if (!x) return;
-  const cur = s ? s.expiresAt.toDate() : new Date();
+  const cur = s ? s.expiresAt.toDate() : new Date(), offs = A.offers.filter(o => o.active !== false).sort((a, b) => a.days - b.days), rf = A.refs.find(r => r.referredUid === id), rn = A.refs.filter(r => r.referrerUid === id).length;
   const o = sheet(`<b>${esc(x.shopName)}</b><div class="tag">${contact(x)}</div>
   ${srow(t("plan"), s ? esc(s.plan) : "—")}${srow(t("mode"), s ? esc(s.mode) : "—")}${srow(t("status"), s ? esc(s.status) : "—")}${srow(t("cur_exp"), s ? fmtDate(s.expiresAt) : "—")}
-  <div class="seg"><button data-add="monthly">${t("add_month")}${cf("monthlyPrice") ? " ৳" + n(cf("monthlyPrice")) : ""}</button><button data-add="yearly">${t("add_year")}${cf("yearlyPrice") ? " ৳" + n(cf("yearlyPrice")) : ""}</button></div>
+  ${rf ? srow(t("ref_from"), esc(cname(rf.referrerUid))) : ""}${rn ? srow(t("ref_count"), dg(rn) + " " + t("ref_people")) : ""}${A.codes[id] ? srow(t("ref_code"), esc(A.codes[id])) : ""}
+  <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">${offs.map(of => `<button class="ib" data-add="${of.id}" style="margin:0">+ ${daysLabel(of.days)} ৳${n(fin(of))}</button>`).join("") || `<span class="tag">${t("off_none")}</span>`}</div>
   <label>${t("new_exp")}</label><input type="date" id="ne" value="${dstr(cur)}"><div class="msg" id="nm"></div><button class="btn" id="ns" style="margin-top:6px">${t("save")}</button>
   <label>${t("mode")}</label><div class="seg"><button data-md="simple" class="${s && s.mode === "simple" ? "on" : ""}">${t("m_simple")}</button><button data-md="advance" class="${s && s.mode === "advance" ? "on" : ""}">${t("m_adv")}</button></div>
   <button class="btn ghost" id="st" style="margin-top:10px">${s && s.status === "active" ? t("suspend") : t("activate")}</button>`);
   const q = z => o.querySelector(z);
   o.querySelectorAll("[data-add]").forEach(b => b.onclick = () => {
-    const plan = b.dataset.add;
-    fieldSheet(t("renew_amt") + " — " + t(plan === "yearly" ? "yearly" : "monthly"), (plan === "yearly" ? cf("yearlyPrice") : cf("monthlyPrice")) || "", async v => {
+    const of = A.offers.find(z => z.id === b.dataset.add); if (!of) return;
+    fieldSheet(t("renew_amt") + " — " + daysLabel(of.days), fin(of), async v => {
       const amount = calc(v); if (isNaN(amount) || amount < 0) return t("bad_amt");
       if (!s) return t("b_none");
       if (!(await askPassword())) return;
-      const base = new Date(Math.max(Date.now(), s.expiresAt.toMillis())); base.setDate(base.getDate() + (plan === "yearly" ? 365 : 30));
+      const base = new Date(Math.max(Date.now(), s.expiresAt.toMillis())); base.setDate(base.getDate() + of.days);
       const b2 = writeBatch(db);
-      b2.set(doc(db, "payments", "manual_" + Date.now()), { uid: id, plan, amount: r2(amount), method: "manual", trxId: "", status: "approved", date: todayStr(), createdAt: serverTimestamp(), decidedAt: serverTimestamp(), decidedBy: auth.currentUser.uid });
-      b2.update(doc(db, "subscriptions", id), { plan, expiresAt: Timestamp.fromDate(base), status: "active", lastPaidAmount: r2(amount), lastPaidAt: serverTimestamp() });
+      b2.set(doc(db, "payments", "manual_" + Date.now()), { uid: id, days: of.days, listPrice: of.price, discount: of.discount || 0, amount: r2(amount), method: "manual", trxId: "", status: "approved", date: todayStr(), createdAt: serverTimestamp(), decidedAt: serverTimestamp(), decidedBy: auth.currentUser.uid });
+      b2.update(doc(db, "subscriptions", id), { plan: of.days >= 300 ? "yearly" : "monthly", expiresAt: Timestamp.fromDate(base), status: "active", lastPaidAmount: r2(amount), lastPaidAt: serverTimestamp() });
       b2.commit().then(() => toast(t("exp_saved"))).catch(fail);
     }, "decimal");
   });
@@ -1343,14 +1472,15 @@ function subSheet(id) {
   q("#st").onclick = () => { if (s) updateDoc(doc(db, "subscriptions", id), { status: s.status === "active" ? "suspended" : "active" }).then(() => { closeSheet(); toast(t("saved")); }).catch(fail); };
 }
 function buildIncome(a, b, items) {
-  const nm = id => { const c = A.c.find(z => z.id === id); return c ? c.shopName : id; }, sm = f => r2(items.filter(f).reduce((s2, x) => s2 + (x.amount || 0), 0)), ct = f => items.filter(f).length;
-  const byDay = {}; items.forEach(x => { const d = byDay[x.date] = byDay[x.date] || [0, 0]; d[0]++; d[1] += x.amount || 0; });
+  const sm = f => r2(items.filter(f).reduce((s2, x) => s2 + (x.amount || 0), 0)), byDay = {}, byOff = {};
+  items.forEach(x => { const d = byDay[x.date] = byDay[x.date] || [0, 0]; d[0]++; d[1] += x.amount || 0; const k = pd(x), o = byOff[k] = byOff[k] || [0, 0]; o[0]++; o[1] += x.amount || 0; });
   const days = Object.keys(byDay).sort().reverse().map(k => [fmtD(k), byDay[k][0], r2(byDay[k][1])]);
-  const rows = [...items].sort((x, y) => y.date.localeCompare(x.date) || ms(y) - ms(x)).map(x => [fmtD(x.date), nm(x.uid), t(x.plan === "yearly" ? "yearly" : "monthly"), x.method === "manual" ? "Manual" : x.method, x.trxId || "", x.amount || 0]);
+  const offs = Object.keys(byOff).map(Number).sort((x, y) => x - y).map(k => [daysLabel(k), byOff[k][0], r2(byOff[k][1])]);
+  const rows = [...items].sort((x, y) => y.date.localeCompare(x.date) || ms(y) - ms(x)).map(x => [fmtD(x.date), cname(x.uid), daysLabel(pd(x)), x.method === "manual" ? "Manual" : x.method, x.trxId || "", x.amount || 0]);
   return { file: "income-" + a + "_" + b, title: t("inc_title"), sub: rngLabel(a, b), blocks: [
-    { head: t("rs_head"), cols: [t("r_item"), t("r_cnt"), t("r_amt")], rows: [[t("monthly"), ct(x => x.plan === "monthly"), sm(x => x.plan === "monthly")], [t("yearly"), ct(x => x.plan === "yearly"), sm(x => x.plan === "yearly")]], foot: [t("r_total"), items.length, sm(() => true)] },
+    { head: t("rs_head"), cols: [t("r_item"), t("r_cnt"), t("r_amt")], rows: offs, foot: [t("r_total"), items.length, sm(() => true)] },
     { head: t("inc_day"), cols: [t("r_date"), t("r_cnt"), t("r_amt")], rows: days },
-    { head: t("rx_det"), cols: [t("r_date"), t("c_name"), t("c_plan"), t("c_meth"), "TrxID", t("r_amt")], rows }] };
+    { head: t("rx_det"), cols: [t("r_date"), t("c_name"), t("bill_offer"), t("c_meth"), "TrxID", t("r_amt")], rows }] };
 }
 function drawInc() {
   show(`<div class="card"><h1>${t("inc_title")}</h1>${rangeHtml(A.ia || monthStart(), A.ib || todayStr())}
